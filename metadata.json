@@ -1,0 +1,5 @@
+{
+  "name": "syncSpace",
+  "description": "A minimalist project board for focused teams. Features interconnected Kanban boards and calendar views to streamline your workflow. All data is stored locally in your browser.",
+  "requestFramePermissions": []
+}

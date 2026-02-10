@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syncSpace</title>
+    <script>
+      // Prevents FOUC by setting theme from localStorage or system preference before React loads
+      (function() {
+        try {
+          const theme = localStorage.getItem('syncSpaceTheme');
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (theme === 'dark' || (!theme && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          console.error('Could not set initial theme', e);
+        }
+      })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Tiptap General Styles */
+      .ProseMirror {
+        outline: none;
+        padding: 0.75rem;
+      }
+
+      .ProseMirror > * + * {
+        margin-top: 0.75em;
+      }
+      
+      .ProseMirror ul, .ProseMirror ol {
+        padding: 0 1rem;
+      }
+
+      .ProseMirror h1, .ProseMirror h2, .ProseMirror h3 {
+        line-height: 1.1;
+        font-weight: 600;
+      }
+      .ProseMirror h1 { font-size: 1.75em; }
+      .ProseMirror h2 { font-size: 1.4em; }
+      .ProseMirror h3 { font-size: 1.2em; }
+
+
+      .ProseMirror a {
+        color: #3b82f6;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+
+      .ProseMirror blockquote {
+        padding-left: 1rem;
+        border-left: 3px solid #d1d5db;
+      }
+      .dark .ProseMirror blockquote {
+        border-left: 3px solid #4b5563;
+      }
+      
+      .ProseMirror pre {
+        background: #161B22;
+        color: #e5e7eb;
+        font-family: 'JetBrainsMono', monospace;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+      }
+      .dark .ProseMirror pre {
+        background: #0D1117;
+      }
+
+      .ProseMirror pre code {
+        color: inherit;
+        padding: 0;
+        background: none;
+        font-size: 0.8rem;
+      }
+      
+      .ProseMirror p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        float: left;
+        color: #6b7280;
+        pointer-events: none;
+        height: 0;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@tiptap/react": "https://aistudiocdn.com/@tiptap/react@^2.5.7",
+    "@tiptap/starter-kit": "https://aistudiocdn.com/@tiptap/starter-kit@^2.5.7",
+    "@tiptap/extension-placeholder": "https://aistudiocdn.com/@tiptap/extension-placeholder@^2.5.7",
+    "@tiptap/extension-link": "https://aistudiocdn.com/@tiptap/extension-link@^2.5.7",
+    "@tiptap/core": "https://aistudiocdn.com/@tiptap/core@^2.5.7",
+    "prosemirror-state": "https://aistudiocdn.com/prosemirror-state@^1.4.3",
+    "prosemirror-view": "https://aistudiocdn.com/prosemirror-view@^1.33.6",
+    "prosemirror-model": "https://aistudiocdn.com/prosemirror-model@^1.21.0",
+    "prosemirror-transform": "https://aistudiocdn.com/prosemirror-transform@^1.9.0",
+    "prosemirror-commands": "https://aistudiocdn.com/prosemirror-commands@^1.5.2",
+    "prosemirror-schema-list": "https://aistudiocdn.com/prosemirror-schema-list@^1.3.0",
+    "prosemirror-inputrules": "https://aistudiocdn.com/prosemirror-inputrules@^1.2.1",
+    "prosemirror-keymap": "https://aistudiocdn.com/prosemirror-keymap@^1.2.2",
+    "prosemirror-history": "https://aistudiocdn.com/prosemirror-history@^1.3.0",
+    "prosemirror-dropcursor": "https://aistudiocdn.com/prosemirror-dropcursor@^1.8.1",
+    "prosemirror-gapcursor": "https://aistudiocdn.com/prosemirror-gapcursor@^1.3.2"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-50 dark:bg-[#0D1117]">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
