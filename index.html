@@ -1,91 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>syncSpace</title>
-    <script>
-      // Prevents FOUC by setting theme from localStorage or system preference before React loads
-      (function() {
-        try {
-          const theme = localStorage.getItem('syncSpaceTheme');
-          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (theme === 'dark' || (!theme && prefersDark)) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-        } catch (e) {
-          console.error('Could not set initial theme', e);
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <title>syncSpace</title>
+  <script>
+    // Prevents FOUC by setting theme from localStorage or system preference before React loads
+    (function () {
+      try {
+        const theme = localStorage.getItem('syncSpaceTheme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (theme === 'dark' || (!theme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
         }
-      })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      /* Tiptap General Styles */
-      .ProseMirror {
-        outline: none;
-        padding: 0.75rem;
+      } catch (e) {
+        console.error('Could not set initial theme', e);
       }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            // Orbital Theme Palette
+            brand: {
+              dark: '#050505',       // Void Black
+              surface: '#0A0A0A',    // Deep Charcoal
+              'surface-light': '#171717', // Lighter Charcoal
+              border: '#262626',     // Subtle Border
+            },
+            cloud: {
+              DEFAULT: '#FAFAFA',    // Clean White
+              strong: '#F5F5F5',     // Light Grey
+              border: '#E5E5E5',     // Light Border
+            },
+            accent: {
+              primary: '#D4FF00',    // Electric Lime (High visibility)
+              secondary: '#00F0FF',  // Cyan (Tech feel)
+              tertiary: '#FF2E63',   // Signal Red/Pink
+            },
+            status: {
+              success: '#22C55E',
+              warning: '#EAB308',
+              error: '#EF4444',
+              info: '#3B82F6',
+            }
+          },
+          backgroundImage: {
+            'grid-pattern': "linear-gradient(to right, #262626 1px, transparent 1px), linear-gradient(to bottom, #262626 1px, transparent 1px)",
+            'grid-pattern-light': "linear-gradient(to right, #E5E5E5 1px, transparent 1px), linear-gradient(to bottom, #E5E5E5 1px, transparent 1px)",
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Tiptap General Styles */
+    .ProseMirror {
+      outline: none;
+      padding: 0.75rem;
+    }
 
-      .ProseMirror > * + * {
-        margin-top: 0.75em;
-      }
-      
-      .ProseMirror ul, .ProseMirror ol {
-        padding: 0 1rem;
-      }
+    .ProseMirror>*+* {
+      margin-top: 0.75em;
+    }
 
-      .ProseMirror h1, .ProseMirror h2, .ProseMirror h3 {
-        line-height: 1.1;
-        font-weight: 600;
-      }
-      .ProseMirror h1 { font-size: 1.75em; }
-      .ProseMirror h2 { font-size: 1.4em; }
-      .ProseMirror h3 { font-size: 1.2em; }
+    .ProseMirror ul,
+    .ProseMirror ol {
+      padding: 0 1rem;
+    }
+
+    .ProseMirror h1,
+    .ProseMirror h2,
+    .ProseMirror h3 {
+      line-height: 1.1;
+      font-weight: 600;
+    }
+
+    .ProseMirror h1 {
+      font-size: 1.75em;
+    }
+
+    .ProseMirror h2 {
+      font-size: 1.4em;
+    }
+
+    .ProseMirror h3 {
+      font-size: 1.2em;
+    }
 
 
-      .ProseMirror a {
-        color: #3b82f6;
-        text-decoration: underline;
-        cursor: pointer;
-      }
+    .ProseMirror a {
+      color: #3b82f6;
+      text-decoration: underline;
+      cursor: pointer;
+    }
 
-      .ProseMirror blockquote {
-        padding-left: 1rem;
-        border-left: 3px solid #d1d5db;
-      }
-      .dark .ProseMirror blockquote {
-        border-left: 3px solid #4b5563;
-      }
-      
-      .ProseMirror pre {
-        background: #161B22;
-        color: #e5e7eb;
-        font-family: 'JetBrainsMono', monospace;
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-      }
-      .dark .ProseMirror pre {
-        background: #0D1117;
-      }
+    .ProseMirror blockquote {
+      padding-left: 1rem;
+      border-left: 3px solid #d1d5db;
+    }
 
-      .ProseMirror pre code {
-        color: inherit;
-        padding: 0;
-        background: none;
-        font-size: 0.8rem;
-      }
-      
-      .ProseMirror p.is-editor-empty:first-child::before {
-        content: attr(data-placeholder);
-        float: left;
-        color: #6b7280;
-        pointer-events: none;
-        height: 0;
-      }
-    </style>
+    .dark .ProseMirror blockquote {
+      border-left: 3px solid #4b5563;
+    }
+
+    .ProseMirror pre {
+      background: #161B22;
+      color: #e5e7eb;
+      font-family: 'JetBrainsMono', monospace;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+    }
+
+    .dark .ProseMirror pre {
+      background: #0D1117;
+    }
+
+    .ProseMirror pre code {
+      color: inherit;
+      padding: 0;
+      background: none;
+      font-size: 0.8rem;
+    }
+
+    .ProseMirror p.is-editor-empty:first-child::before {
+      content: attr(data-placeholder);
+      float: left;
+      color: #6b7280;
+      pointer-events: none;
+      height: 0;
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -112,8 +174,10 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50 dark:bg-[#0D1117]">
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+
+<body class="bg-cloud dark:bg-brand-dark">
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>

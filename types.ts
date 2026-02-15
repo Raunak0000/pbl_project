@@ -6,14 +6,17 @@ export const STATUSES: Status[] = ['To Do', 'In Progress', 'Done'];
 export const TEAMS = ['Engineering', 'Design', 'Marketing', 'Product', 'Sales'];
 
 export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: Status;
-  assignee?: string; // User ID or Name
-  dueDate?: string; // YYYY-MM-DD format
-  tags?: string[];
-  team?: string;
+    id: string;
+    title: string;
+    description: string;
+    status: Status;
+    assignee?: string; // User ID or Name
+    dueDate?: string; // YYYY-MM-DD format
+    tags?: string[];
+    team?: string;
+    blockedBy?: string[]; // Array of task IDs that block this
+
+    blockedBy?: string[]; // Array of task IDs that block this task from being completed
 }
 
 export interface Board {

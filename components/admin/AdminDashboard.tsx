@@ -37,6 +37,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onGoHome }) => {
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100">
+            <style>{`
+                @keyframes shimmer {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+                .skeleton-shimmer {
+                    background-image: linear-gradient(110deg, rgba(203, 213, 225, 0.4) 0%, rgba(226, 232, 240, 0.9) 45%, rgba(203, 213, 225, 0.4) 100%);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.4s ease-in-out infinite;
+                }
+                .dark .skeleton-shimmer {
+                    background-image: linear-gradient(110deg, rgba(51, 65, 85, 0.35) 0%, rgba(71, 85, 105, 0.7) 45%, rgba(51, 65, 85, 0.35) 100%);
+                }
+            `}</style>
             <nav className="bg-slate-900 text-white p-4">
                 <div className="container mx-auto flex justify-between items-center">
                     <div className="flex items-center space-x-4">
@@ -58,7 +72,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onGoHome }) => {
                     </div>
                     
                     {isLoading ? (
-                        <div className="p-8 text-center text-slate-500">Loading users...</div>
+                        <div className="p-6">
+                            <div className="space-y-4">
+                                {Array.from({ length: 6 }).map((_, index) => (
+                                    <div key={index} className="grid grid-cols-5 gap-4 items-center">
+                                        <div className="h-3 rounded skeleton-shimmer"></div>
+                                        <div className="h-3 rounded skeleton-shimmer"></div>
+                                        <div className="h-3 rounded skeleton-shimmer"></div>
+                                        <div className="h-3 w-16 rounded-full skeleton-shimmer"></div>
+                                        <div className="h-3 w-12 rounded skeleton-shimmer"></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">

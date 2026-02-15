@@ -1,7 +1,8 @@
-
 import React from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../contexts/AuthContext';
+import { ArrowRight, Box, CreditCard, Layout, Zap, CheckCircle2, Hexagon, Terminal } from 'lucide-react';
 
 interface LandingPageProps {
   onEnter: () => void;
@@ -11,36 +12,53 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLogin, onRegister }) => {
   const { isAuthenticated, user } = useAuth();
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
   return (
-    <div className="bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-500/30">
-      
-      {/* Background Gradient Blob */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[100px] -z-10 pointer-events-none"></div>
+    <div className="min-h-screen bg-cloud dark:bg-brand-dark text-slate-900 dark:text-slate-200 font-sans selection:bg-accent-primary/30 selection:text-brand-dark">
+      {/* Background Grid */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-grid-pattern-light dark:bg-grid-pattern bg-[size:40px_40px] opacity-[0.05] dark:opacity-[0.07]"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cloud dark:to-brand-dark"></div>
+      </div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-xl bg-white/70 dark:bg-[#0D1117]/70 border-b border-slate-200/50 dark:border-slate-800/50">
+      <nav className="fixed top-0 w-full z-50 border-b border-cloud-border dark:border-white/10 bg-cloud/80 dark:bg-brand-dark/80 backdrop-blur-xl">
         <div className="container mx-auto px-6 h-16 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/30">S</div>
-             <span className="text-xl font-bold tracking-tight">syncSpace</span>
+          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div className="w-8 h-8 bg-slate-900 dark:bg-white rounded-md flex items-center justify-center text-white dark:text-brand-dark font-bold font-mono group-hover:scale-105 transition-transform">
+              <Terminal className="w-5 h-5" />
+            </div>
+            <span className="text-lg font-bold tracking-tight font-mono">syncSpace_</span>
           </div>
-          
-          <div className="flex items-center space-x-4">
+
+          <div className="flex items-center gap-6">
             <ThemeToggle />
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400 hidden md:inline">@{user?.username}</span>
-                <button onClick={onEnter} className="text-sm bg-slate-900 dark:bg-white text-white dark:text-black px-4 py-2 rounded-full font-medium hover:opacity-90 transition-all shadow-lg shadow-slate-500/20">
-                  Dashboard
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium font-mono text-slate-500 dark:text-slate-400 hidden md:inline">
+                  user: {user?.username}
+                </span>
+                <button
+                  onClick={onEnter}
+                  className="bg-slate-900 dark:bg-white text-white dark:text-brand-dark px-5 py-2 rounded-md font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+                >
+                  Dashboard <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <button onClick={onLogin} className="text-sm font-medium hover:text-blue-600 px-3 py-2 transition-colors">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={onLogin}
+                  className="text-sm font-semibold hover:text-accent-primary transition-colors"
+                >
                   Log In
                 </button>
-                <button onClick={onRegister} className="text-sm bg-blue-600 text-white px-5 py-2 rounded-full font-medium hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30">
+                <button
+                  onClick={onRegister}
+                  className="bg-accent-primary text-brand-dark px-5 py-2 rounded-md font-bold text-sm hover:bg-accent-primary/90 transition-colors shadow-[0_0_15px_rgba(212,255,0,0.3)] hover:shadow-[0_0_25px_rgba(212,255,0,0.5)]"
+                >
                   Get Started
                 </button>
               </div>
@@ -50,180 +68,203 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter, onLogin, onRegister 
       </nav>
 
       {/* Hero Section */}
-      <header className="container mx-auto px-6 pt-32 pb-20 md:pt-40 md:pb-32 flex flex-col items-center text-center relative">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-widest mb-8 border border-blue-100 dark:border-blue-800">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-          v2.0 is Live
-        </div>
-        
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter mb-6 max-w-5xl mx-auto leading-[1.1]">
-          Sync your team, <br className="hidden md:block" />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-violet-600 to-fuchsia-600 animate-gradient-x">
-            master your workflow.
-          </span>
-        </h1>
-        
-        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-          The minimalist workspace for focused teams. Combine powerful Kanban boards with intelligent calendars and AI-assisted writing.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-20">
-          {isAuthenticated ? (
-             <button onClick={onEnter} className="h-12 px-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black font-semibold text-lg hover:scale-105 transition-transform duration-200 shadow-xl shadow-slate-500/20 flex items-center gap-2">
-               Enter Workspace
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-             </button>
-          ) : (
-            <>
-              <button onClick={onRegister} className="h-12 px-8 rounded-full bg-slate-900 dark:bg-white text-white dark:text-black font-semibold text-lg hover:scale-105 transition-transform duration-200 shadow-xl shadow-slate-500/20">
-                Start for Free
-              </button>
-              <button onClick={onLogin} className="h-12 px-8 rounded-full bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 font-medium text-lg hover:bg-slate-50 dark:hover:bg-[#21262D] transition-colors">
-                Existing User
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* CSS-Only UI Mockup */}
-        <div className="w-full max-w-5xl relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative bg-slate-100 dark:bg-[#0D1117] rounded-xl border border-slate-200 dark:border-[#30363D] shadow-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] flex">
-                {/* Mock Sidebar */}
-                <div className="w-16 md:w-48 border-r border-slate-200 dark:border-[#30363D] bg-white dark:bg-[#161B22] flex flex-col p-4 gap-4 hidden sm:flex">
-                    <div className="h-6 w-24 bg-slate-200 dark:bg-[#30363D] rounded mb-4"></div>
-                    <div className="space-y-2">
-                        <div className="h-8 w-full bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800/30"></div>
-                        <div className="h-8 w-3/4 bg-slate-50 dark:bg-[#0D1117] rounded"></div>
-                        <div className="h-8 w-5/6 bg-slate-50 dark:bg-[#0D1117] rounded"></div>
-                    </div>
-                </div>
-                {/* Mock Board */}
-                <div className="flex-1 p-6 bg-slate-50 dark:bg-[#0D1117] overflow-hidden flex flex-col">
-                    <div className="flex justify-between items-center mb-8">
-                        <div className="h-8 w-48 bg-slate-200 dark:bg-[#21262D] rounded"></div>
-                        <div className="flex gap-2">
-                             <div className="h-8 w-8 rounded-full bg-blue-500"></div>
-                             <div className="h-8 w-8 rounded-full bg-green-500"></div>
-                        </div>
-                    </div>
-                    <div className="flex gap-6 flex-1">
-                        {[1, 2, 3].map((col) => (
-                            <div key={col} className="flex-1 bg-slate-100 dark:bg-[#161B22] rounded-lg p-4 border border-slate-200 dark:border-[#30363D] flex flex-col gap-3">
-                                <div className="h-4 w-20 bg-slate-300 dark:bg-[#30363D] rounded mb-2"></div>
-                                <div className="h-24 bg-white dark:bg-[#21262D] rounded border border-slate-200 dark:border-[#30363D] shadow-sm p-3">
-                                    <div className="h-3 w-3/4 bg-slate-200 dark:bg-[#30363D] rounded mb-2"></div>
-                                    <div className="h-2 w-1/2 bg-slate-100 dark:bg-[#0D1117] rounded"></div>
-                                </div>
-                                <div className="h-24 bg-white dark:bg-[#21262D] rounded border border-slate-200 dark:border-[#30363D] shadow-sm p-3 opacity-70">
-                                    <div className="h-3 w-2/3 bg-slate-200 dark:bg-[#30363D] rounded mb-2"></div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-      </header>
-
-      {/* Bento Grid Features Section */}
-      <section className="container mx-auto px-6 py-24">
-        <div className="mb-16 text-center max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Orchestrate your work</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">Everything you need to manage projects, designed in a modular grid for maximum efficiency.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Feature 1: Kanban (Large) */}
-            <div className="md:col-span-2 bg-white dark:bg-[#161B22] rounded-3xl p-8 border border-slate-200 dark:border-[#30363D] relative overflow-hidden group hover:border-blue-500/50 transition-colors shadow-sm">
-                <div className="relative z-10">
-                    <h3 className="text-2xl font-bold mb-2">Visual Kanban Boards</h3>
-                    <p className="text-slate-500 dark:text-slate-400 max-w-sm">Drag, drop, and move tasks seamlessly. Visualize your progress in real-time with intuitive columns.</p>
-                </div>
-                <div className="absolute right-0 bottom-0 w-1/2 h-3/4 bg-slate-50 dark:bg-[#0D1117] rounded-tl-2xl border-t border-l border-slate-200 dark:border-[#30363D] p-4 group-hover:scale-[1.02] transition-transform duration-500 origin-bottom-right">
-                    <div className="flex gap-3 h-full">
-                        <div className="w-1/2 bg-slate-200 dark:bg-[#21262D] rounded-lg"></div>
-                        <div className="w-1/2 bg-slate-200 dark:bg-[#21262D] rounded-lg"></div>
-                    </div>
-                </div>
+      <section className="relative z-10 pt-32 pb-20 md:pt-48 md:pb-32 px-6">
+        <div className="container mx-auto max-w-5xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-white/5 backdrop-blur-sm mb-8">
+              <span className="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
+              <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+                System Online v2.0
+              </span>
             </div>
 
-            {/* Feature 2: AI (Tall) */}
-            <div className="bg-gradient-to-b from-blue-600 to-violet-600 rounded-3xl p-8 text-white relative overflow-hidden flex flex-col justify-between group shadow-lg shadow-blue-500/20">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="relative z-10">
-                    <div className="w-10 h-10 bg-white/20 backdrop-blur-lg rounded-lg flex items-center justify-center mb-4">
-                        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    </div>
-                    <h3 className="text-2xl font-bold mb-2">AI Assisted</h3>
-                    <p className="text-blue-100">Stuck on a description? Let Gemini AI write it for you with a single click.</p>
-                </div>
-                <div className="mt-6 bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20 translate-y-2 group-hover:translate-y-0 transition-transform">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                        <span className="text-xs font-mono text-blue-100">Generating content...</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/20 rounded mb-1"></div>
-                    <div className="h-2 w-2/3 bg-white/20 rounded"></div>
-                </div>
-            </div>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[0.9] text-slate-900 dark:text-white mb-8">
+              Precision tools for <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 dark:from-white dark:via-slate-400 dark:to-white">
+                chaotic workflows.
+              </span>
+            </h1>
 
-            {/* Feature 3: Calendar (Wide) */}
-            <div className="md:col-span-3 bg-slate-100 dark:bg-[#0D1117] rounded-3xl p-1 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#30363D_1px,transparent_1px)] [background-size:16px_16px] border border-slate-200 dark:border-[#30363D]">
-                 <div className="bg-white/50 dark:bg-[#161B22]/80 backdrop-blur-sm p-8 rounded-[20px] flex flex-col md:flex-row items-center gap-8 h-full border border-white/50 dark:border-white/5">
-                    <div className="flex-1">
-                        <h3 className="text-2xl font-bold mb-2">Integrated Calendar View</h3>
-                        <p className="text-slate-500 dark:text-slate-400">Switch contexts instantly. See deadlines, plan sprints, and manage your time without leaving the board.</p>
-                    </div>
-                    <div className="flex-1 w-full grid grid-cols-7 gap-2 opacity-80">
-                        {Array.from({length: 14}).map((_, i) => (
-                            <div key={i} className={`aspect-square rounded-md border border-slate-200 dark:border-[#30363D] ${i === 4 || i === 9 ? 'bg-blue-500 border-blue-500' : 'bg-white dark:bg-[#0D1117]'}`}></div>
-                        ))}
-                    </div>
-                 </div>
+            <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed mb-12">
+              SyncSpace isn't just a project management tool. It's a high-performance workspace engine designed for teams who demand clarity, speed, and absolute control.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              {isAuthenticated ? (
+                <button
+                  onClick={onEnter}
+                  className="h-14 px-8 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-brand-dark font-bold text-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-3 shadow-xl"
+                >
+                  <Terminal className="w-5 h-5" />
+                  Initialize Workspace
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={onRegister}
+                    className="h-14 px-8 rounded-lg bg-accent-primary text-brand-dark font-bold text-lg hover:bg-accent-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_4px_20px_rgba(212,255,0,0.25)] flex items-center gap-2"
+                  >
+                    Start Building <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={onLogin}
+                    className="h-14 px-8 rounded-lg border border-slate-200 dark:border-white/20 hover:bg-slate-100 dark:hover:bg-white/10 font-semibold text-lg transition-all"
+                  >
+                    View Demo
+                  </button>
+                </>
+              )}
             </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="py-32 border-t border-slate-200 dark:border-[#30363D]">
-          <div className="container mx-auto px-6 text-center">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Ready to streamline?</h2>
-              <p className="text-xl text-slate-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto">Join the mock backend environment and experience the flow today.</p>
-              
-              {isAuthenticated ? (
-                <button onClick={onEnter} className="bg-blue-600 text-white text-lg font-bold py-4 px-10 rounded-full hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-500/20 transition-all">
-                    Go to Dashboard
-                </button>
-              ) : (
-                <button onClick={onRegister} className="bg-slate-900 dark:bg-white text-white dark:text-black text-lg font-bold py-4 px-10 rounded-full hover:scale-105 hover:shadow-xl transition-all">
-                    Create Free Account
-                </button>
-              )}
+      {/* Feature Grid */}
+      <section className="relative z-10 py-24 px-6 border-t border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-brand-surface/50">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <motion.div
+              style={{ y }}
+              className="md:col-span-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-brand-dark p-8 md:p-12 shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-white/20 transition-all duration-300 group"
+            >
+              <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-white/10 flex items-center justify-center mb-6 text-slate-900 dark:text-white group-hover:scale-110 transition-transform duration-300">
+                <Layout className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">Fluid Kanban Systems</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed mb-8 max-w-md">
+                Drag, drop, and organize with zero friction. Our physics-based board engine feels tangible and responsive.
+              </p>
+
+              <div className="rounded-xl bg-slate-100 dark:bg-brand-surface border border-slate-200 dark:border-white/5 p-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-2 opacity-20">
+                  <Hexagon className="w-24 h-24 text-slate-900 dark:text-white" strokeWidth={0.5} />
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-3">
+                    <div className="h-2 w-20 bg-slate-300 dark:bg-white/20 rounded-full"></div>
+                    <div className="h-24 bg-white dark:bg-brand-dark rounded-lg border border-slate-200 dark:border-white/5 shadow-sm p-3">
+                      <div className="h-2 w-12 bg-accent-secondary/50 rounded-full mb-2"></div>
+                      <div className="h-2 w-3/4 bg-slate-200 dark:bg-white/10 rounded-full mb-1"></div>
+                      <div className="h-2 w-1/2 bg-slate-200 dark:bg-white/10 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3 pt-6">
+                    <div className="h-24 bg-white dark:bg-brand-dark rounded-lg border border-slate-200 dark:border-white/5 shadow-sm p-3 transform translate-y-2">
+                      <div className="h-2 w-12 bg-accent-primary/50 warning rounded-full mb-2"></div>
+                      <div className="h-2 w-3/4 bg-slate-200 dark:bg-white/10 rounded-full"></div>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div className="h-2 w-20 bg-slate-300 dark:bg-white/20 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 2 */}
+            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-brand-dark p-8 shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-white/20 transition-all duration-300 group">
+              <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-white/10 flex items-center justify-center mb-6 text-slate-900 dark:text-white group-hover:rotate-12 transition-transform duration-300">
+                <Zap className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white">Real-time Sync</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-8">
+                Sub-millisecond latency. See your team's cursors and edits as they happen.
+              </p>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-brand-surface border border-slate-100 dark:border-white/5">
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/20 border-2 border-white dark:border-brand-dark"></div>
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-status-success rounded-full border-2 border-white dark:border-brand-dark"></div>
+                </div>
+                <div className="space-y-1">
+                  <div className="h-1.5 w-16 bg-slate-300 dark:bg-white/20 rounded-full"></div>
+                  <div className="h-1.5 w-10 bg-slate-200 dark:bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-brand-dark p-8 shadow-sm hover:shadow-xl hover:border-slate-300 dark:hover:border-white/20 transition-all duration-300 group">
+              <div className="h-12 w-12 rounded-lg bg-slate-100 dark:bg-white/10 flex items-center justify-center mb-6 text-slate-900 dark:text-white group-hover:scale-90 transition-transform duration-300">
+                <Box className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white">Block-Based Editor</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                A powerful Notion-style editor for documents, specs, and notes.
+              </p>
+              <div className="space-y-2 font-mono text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-brand-surface p-4 rounded-lg border border-slate-100 dark:border-white/5">
+                <p><span className="text-accent-tertiary">#</span> Q3_Roadmap.md</p>
+                <p className="pl-2 border-l border-slate-200 dark:border-white/10">- [x] Launch MVP</p>
+                <p className="pl-2 border-l border-slate-200 dark:border-white/10">- [ ] Scale users</p>
+              </div>
+            </div>
+
+            {/* Card 4 - Wide */}
+            <div className="md:col-span-2 rounded-2xl border border-slate-200 dark:border-white/10 bg-accent-secondary/5 dark:bg-accent-secondary/5 p-8 md:p-12 shadow-sm hover:shadow-xl hover:border-accent-secondary/30 transition-all duration-300 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-accent-secondary/10 dark:bg-accent-secondary/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">Command Center</h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-lg">
+                    Access everything with <kbd className="px-2 py-1 rounded bg-white dark:bg-brand-surface border border-slate-200 dark:border-white/10 text-xs font-mono font-bold mx-1">Cmd + K</kbd>. Navigate between boards, task, and settings without lifting your hands from the keyboard.
+                  </p>
+                </div>
+                <div className="w-full md:w-1/3 bg-white dark:bg-brand-dark rounded-lg border border-slate-200 dark:border-white/10 shadow-lg p-4">
+                  <div className="flex items-center gap-2 mb-3 px-2 py-1 rounded bg-slate-100 dark:bg-white/5">
+                    <Terminal className="w-4 h-4 text-slate-400" />
+                    <div className="h-4 w-1 bg-accent-secondary animate-pulse"></div>
+                  </div>
+                  <div className="space-y-1">
+                    {['Go to Marketing Board', 'Create new Task', 'Switch Theme'].map((item, i) => (
+                      <div key={i} className={`px-3 py-2 rounded flex items-center justify-between ${i === 0 ? 'bg-accent-secondary/10 text-accent-secondary' : 'text-slate-500 dark:text-slate-400'}`}>
+                        <span className="text-xs font-medium">{item}</span>
+                        {i === 0 && <CornerDownLeft size={10} />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-[#161B22] border-t border-slate-200 dark:border-[#30363D] py-12">
-          <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-slate-900 dark:bg-white rounded flex items-center justify-center text-white dark:text-black font-bold text-xs">S</div>
-                  <span className="font-bold tracking-tight">syncSpace</span>
-              </div>
-              <div className="flex gap-6 text-sm text-slate-500 dark:text-slate-400">
-                  <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy</a>
-                  <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms</a>
-                  <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Twitter</a>
-                  <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">GitHub</a>
-              </div>
-              <div className="text-xs text-slate-400">
-                  © {new Date().getFullYear()} syncSpace Inc.
-              </div>
+      <footer className="py-12 border-t border-slate-200 dark:border-white/5 bg-cloud dark:bg-brand-dark">
+        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-slate-900 dark:bg-white rounded flex items-center justify-center text-white dark:text-brand-dark font-bold font-mono text-xs">S</div>
+            <span className="font-bold tracking-tight text-slate-900 dark:text-white">syncSpace_</span>
           </div>
+          <p className="text-sm text-slate-500 dark:text-slate-500">
+            © {new Date().getFullYear()} Orbital Systems Inc. All rights reserved.
+          </p>
+        </div>
       </footer>
-
     </div>
   );
 };
+
+// Icon component helper
+const CornerDownLeft = ({ size = 16, ...props }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    {...props}
+  >
+    <polyline points="9 10 4 15 9 20" />
+    <path d="M20 4v7a4 4 0 0 1-4 4H4" />
+  </svg>
+);
 
 export default LandingPage;
