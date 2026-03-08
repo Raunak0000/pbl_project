@@ -29,6 +29,11 @@ public class TaskController {
         return ResponseEntity.ok(taskService.createTask(task));
     }
 
+    @PutMapping("/{taskId}")
+    public ResponseEntity<Task> updateTask(@PathVariable String taskId, @RequestBody Task task) {
+        return ResponseEntity.ok(taskService.updateTask(taskId, task));
+    }
+
     @PatchMapping("/{taskId}/status")
     public ResponseEntity<?> updateTaskStatus(@PathVariable String taskId, @RequestParam String status) {
         try {

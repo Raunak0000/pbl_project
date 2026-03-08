@@ -1,4 +1,4 @@
-
+import { api } from './services/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Task, Status, Board, STATUSES } from './types';
 import LandingPage from './components/LandingPage';
@@ -20,25 +20,38 @@ const App: React.FC = () => {
   const { isAuthenticated, isAdmin, logout, user } = useAuth();
 
   // Main State
-  const [boards, setBoards] = useState<Board[]>(() => {
-    try {
-      const savedBoards = localStorage.getItem('syncSpaceBoards');
-      const parsedBoards = savedBoards ? JSON.parse(savedBoards) : [];
-      // Migration: Ensure all boards have columns property and tasks have tags/teams
-      return parsedBoards.map((b: any) => ({
-        ...b,
-        columns: b.columns || [...STATUSES],
-        tasks: b.tasks.map((t: any) => ({
-          ...t,
-          tags: t.tags || [],
-          team: t.team || 'Unassigned'
-        }))
-      }));
-    } catch (error) {
-      console.error("Could not parse boards from localStorage", error);
-      return [];
+  const [boards, setBoards] = useState<Board[]>([]);
+
+  useEffect(() => {
+    const fetchBoards = async () => {
+      try {
+        const fetchedBoards = await api.getBoards();
+        const boardsWithTasks = await Promise.all(fetchedBoards.map(async (board) => {
+          try {
+            const tasks = await api.getTasksForBoard(board.id);
+            return {
+              ...board,
+              columns: board.columns || [...STATUSES],
+              tasks: tasks.map(t => ({
+                ...t,
+                tags: t.tags || [],
+                team: t.team || 'Unassigned'
+              }))
+            };
+          } catch (err) {
+            console.error('Failed to fetch tasks for board ' + board.id, err);
+            return { ...board, tasks: [], columns: board.columns || [...STATUSES] };
+          }
+        }));
+        setBoards(boardsWithTasks);
+      } catch (error) {
+        console.error("Could not fetch boards from API", error);
+      }
+    };
+    if (isAuthenticated) {
+      fetchBoards();
     }
-  });
+  }, [isAuthenticated]);
 
   const [appView, setAppView] = useState<AppView>('landing');
   const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
@@ -70,10 +83,6 @@ const App: React.FC = () => {
     }
     window.history.pushState({}, '', url);
   }, [viewContext]);
-
-  useEffect(() => {
-    localStorage.setItem('syncSpaceBoards', JSON.stringify(boards));
-  }, [boards]);
 
   // Live Editing Integration
   useEffect(() => {
@@ -164,15 +173,18 @@ const App: React.FC = () => {
   };
 
   // Board Management
-  const handleAddBoard = (name: string, description: string) => {
-    const newBoard: Board = {
-      id: new Date().toISOString(),
-      name,
-      description,
-      tasks: [],
-      columns: [...STATUSES],
-    };
-    setBoards(prev => [...prev, newBoard]);
+  const handleAddBoard = async (name: string, description: string) => {
+    try {
+      const createdBoard = await api.createBoard({
+        name,
+        description,
+        tasks: [],
+        columns: [...STATUSES],
+      });
+      setBoards(prev => [...prev, { ...createdBoard, tasks: [], columns: createdBoard.columns || [...STATUSES] }]);
+    } catch {
+      console.error("Failed to add board");
+    }
   };
 
   const handleSelectBoard = (boardId: string) => {
@@ -180,11 +192,16 @@ const App: React.FC = () => {
     setAppView('board');
   };
 
-  const handleDeleteBoard = (boardId: string) => {
-    setBoards(prev => prev.filter(b => b.id !== boardId));
-    if (activeBoardId === boardId) {
-      setActiveBoardId(null);
-      setAppView('dashboard');
+  const handleDeleteBoard = async (boardId: string) => {
+    try {
+      await api.deleteBoard(boardId);
+      setBoards(prev => prev.filter(b => b.id !== boardId));
+      if (activeBoardId === boardId) {
+        setActiveBoardId(null);
+        setAppView('dashboard');
+      }
+    } catch {
+      console.error("Failed to delete board");
     }
   };
 
@@ -199,46 +216,62 @@ const App: React.FC = () => {
     setSelectedTask(null);
   };
 
-  const handleSaveTask = (taskToSave: Task) => {
+  const handleSaveTask = async (taskToSave: Task) => {
     if (!activeBoardId) return;
 
     const isNewTask = !boards.find(b => b.id === activeBoardId)?.tasks.find(t => t.id === taskToSave.id);
 
-    setBoards(prevBoards => prevBoards.map(board => {
-      if (board.id !== activeBoardId) return board;
+    try {
+      let savedTask: Task;
+      if (isNewTask) {
+        savedTask = await api.createTask({ ...taskToSave, boardId: activeBoardId });
+      } else {
+        savedTask = await api.updateTask(taskToSave.id, taskToSave);
+      }
 
-      const taskExists = board.tasks.find(t => t.id === taskToSave.id);
-      const newTasks = taskExists
-        ? board.tasks.map(t => t.id === taskToSave.id ? taskToSave : t)
-        : [...board.tasks, taskToSave];
+      setBoards(prevBoards => prevBoards.map(board => {
+        if (board.id !== activeBoardId) return board;
 
-      return { ...board, tasks: newTasks };
-    }));
+        const taskExists = board.tasks.find(t => t.id === savedTask.id);
+        const newTasks = taskExists
+          ? board.tasks.map(t => t.id === savedTask.id ? savedTask : t)
+          : [...board.tasks, savedTask];
 
-    // Broadcast the change
-    if (isNewTask) {
-      liveEditingService.broadcastTaskCreate(activeBoardId, taskToSave);
-    } else {
-      liveEditingService.broadcastTaskUpdate(activeBoardId, taskToSave.id, taskToSave);
+        return { ...board, tasks: newTasks };
+      }));
+
+      // Broadcast the change
+      if (isNewTask) {
+        liveEditingService.broadcastTaskCreate(activeBoardId, savedTask);
+      } else {
+        liveEditingService.broadcastTaskUpdate(activeBoardId, savedTask.id, savedTask);
+      }
+
+      handleCloseModal();
+    } catch (error) {
+      console.error("Failed to save task", error);
     }
-
-    handleCloseModal();
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = async (taskId: string) => {
     if (!activeBoardId) return;
-    setBoards(prevBoards => prevBoards.map(board => {
-      if (board.id !== activeBoardId) return board;
-      return { ...board, tasks: board.tasks.filter(t => t.id !== taskId) };
-    }));
+    try {
+      await api.deleteTask(taskId);
+      setBoards(prevBoards => prevBoards.map(board => {
+        if (board.id !== activeBoardId) return board;
+        return { ...board, tasks: board.tasks.filter(t => t.id !== taskId) };
+      }));
 
-    // Broadcast deletion
-    liveEditingService.broadcastTaskDelete(activeBoardId, taskId);
+      // Broadcast deletion
+      liveEditingService.broadcastTaskDelete(activeBoardId, taskId);
 
-    handleCloseModal();
+      handleCloseModal();
+    } catch (error) {
+      console.error("Failed to delete task", error);
+    }
   };
 
-  const handleMoveTask = useCallback((taskId: string, newStatus: Status) => {
+  const handleMoveTask = useCallback(async (taskId: string, newStatus: Status) => {
     if (!activeBoardId) return;
     // Validate dependencies if moving to 'Done' status
     if (newStatus === 'Done') {
@@ -259,20 +292,25 @@ const App: React.FC = () => {
       }
     }
 
-    setBoards(prevBoards => prevBoards.map(board => {
-      if (board.id !== activeBoardId) return board;
-      const newTasks = board.tasks.map(task =>
-        task.id === taskId ? { ...task, status: newStatus } : task
-      );
-      return { ...board, tasks: newTasks };
-    }));
+    try {
+      await api.updateTaskStatus(taskId, newStatus);
+      setBoards(prevBoards => prevBoards.map(board => {
+        if (board.id !== activeBoardId) return board;
+        const newTasks = board.tasks.map(task =>
+          task.id === taskId ? { ...task, status: newStatus } : task
+        );
+        return { ...board, tasks: newTasks };
+      }));
 
-    // Broadcast status change
-    liveEditingService.broadcastTaskUpdate(activeBoardId, taskId, { status: newStatus });
+      // Broadcast status change
+      liveEditingService.broadcastTaskUpdate(activeBoardId, taskId, { status: newStatus });
+    } catch (error) {
+      console.error("Failed to move task", error);
+    }
   }, [activeBoardId, boards]);
 
   // Reorder Logic
-  const handleTaskDrop = (draggedTaskId: string, newStatus: Status, targetTaskId: string | null) => {
+  const handleTaskDrop = async (draggedTaskId: string, newStatus: Status, targetTaskId: string | null) => {
     if (!activeBoardId) return;
 
     const activeBoard = boards.find(b => b.id === activeBoardId);
@@ -296,31 +334,37 @@ const App: React.FC = () => {
       }
     }
 
-    setBoards(prevBoards => prevBoards.map(board => {
-      if (board.id !== activeBoardId) return board;
+    try {
+      await api.updateTaskStatus(draggedTaskId, newStatus);
 
-      const taskToMove = board.tasks.find(t => t.id === draggedTaskId);
-      if (!taskToMove) return board;
+      setBoards(prevBoards => prevBoards.map(board => {
+        if (board.id !== activeBoardId) return board;
 
-      // Remove the task from the list
-      let newTasks = board.tasks.filter(t => t.id !== draggedTaskId);
+        const taskToMove = board.tasks.find(t => t.id === draggedTaskId);
+        if (!taskToMove) return board;
 
-      // Update the task's status
-      const updatedTask = { ...taskToMove, status: newStatus };
+        // Remove the task from the list
+        let newTasks = board.tasks.filter(t => t.id !== draggedTaskId);
 
-      if (targetTaskId) {
-        const targetIndex = newTasks.findIndex(t => t.id === targetTaskId);
-        if (targetIndex !== -1) {
-          newTasks.splice(targetIndex, 0, updatedTask);
+        // Update the task's status
+        const updatedTask = { ...taskToMove, status: newStatus };
+
+        if (targetTaskId) {
+          const targetIndex = newTasks.findIndex(t => t.id === targetTaskId);
+          if (targetIndex !== -1) {
+            newTasks.splice(targetIndex, 0, updatedTask);
+          } else {
+            newTasks.push(updatedTask);
+          }
         } else {
           newTasks.push(updatedTask);
         }
-      } else {
-        newTasks.push(updatedTask);
-      }
 
-      return { ...board, tasks: newTasks };
-    }));
+        return { ...board, tasks: newTasks };
+      }));
+    } catch (error) {
+      console.error("Failed to drop task", error);
+    }
   };
 
   const handleColumnDrop = (draggedColumn: Status, targetColumn: Status) => {
@@ -341,18 +385,23 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleUpdateTask = useCallback((boardId: string, taskId: string, updatedFields: Partial<Task>) => {
-    setBoards(prevBoards => prevBoards.map(board => {
-      if (board.id !== boardId) return board;
+  const handleUpdateTask = useCallback(async (boardId: string, taskId: string, updatedFields: Partial<Task>) => {
+    try {
+      await api.updateTask(taskId, updatedFields);
+      setBoards(prevBoards => prevBoards.map(board => {
+        if (board.id !== boardId) return board;
 
-      const newTasks = board.tasks.map(task =>
-        task.id === taskId ? { ...task, ...updatedFields } : task
-      );
-      return { ...board, tasks: newTasks };
-    }));
+        const newTasks = board.tasks.map(task =>
+          task.id === taskId ? { ...task, ...updatedFields } : task
+        );
+        return { ...board, tasks: newTasks };
+      }));
 
-    // Broadcast task update
-    liveEditingService.broadcastTaskUpdate(boardId, taskId, updatedFields);
+      // Broadcast task update
+      liveEditingService.broadcastTaskUpdate(boardId, taskId, updatedFields);
+    } catch (error) {
+      console.error("Failed to update task", error);
+    }
   }, []);
 
   const handleUpdateTaskInModal = useCallback((taskId: string, updatedFields: Partial<Task>) => {

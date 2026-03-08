@@ -13,4 +13,7 @@ public interface TaskRepo extends MongoRepository<Task,String> {
 
     // Allows the backend to quickly filter tasks by team (e.g., 'Engineering')
     List<Task> findByTeam(String team);
+
+    // Deletes all tasks associated with a specific board
+    void deleteByBoardId(String boardId);
 }

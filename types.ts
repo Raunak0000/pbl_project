@@ -7,6 +7,7 @@ export const TEAMS = ['Engineering', 'Design', 'Marketing', 'Product', 'Sales'];
 
 export interface Task {
     id: string;
+    boardId?: string;
     title: string;
     description: string;
     status: Status;
@@ -14,8 +15,6 @@ export interface Task {
     dueDate?: string; // YYYY-MM-DD format
     tags?: string[];
     team?: string;
-    blockedBy?: string[]; // Array of task IDs that block this
-
     blockedBy?: string[]; // Array of task IDs that block this task from being completed
 }
 

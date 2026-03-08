@@ -24,6 +24,22 @@ public class TaskService {
         return taskRepo.save(task);
     }
 
+    public Task updateTask(String taskId, Task updatedTask) {
+        Task existingTask = taskRepo.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        if (updatedTask.getTitle() != null) existingTask.setTitle(updatedTask.getTitle());
+        if (updatedTask.getDescription() != null) existingTask.setDescription(updatedTask.getDescription());
+        if (updatedTask.getStatus() != null) existingTask.setStatus(updatedTask.getStatus());
+        if (updatedTask.getAssignee() != null) existingTask.setAssignee(updatedTask.getAssignee());
+        if (updatedTask.getDueDate() != null) existingTask.setDueDate(updatedTask.getDueDate());
+        if (updatedTask.getTags() != null) existingTask.setTags(updatedTask.getTags());
+        if (updatedTask.getTeam() != null) existingTask.setTeam(updatedTask.getTeam());
+        if (updatedTask.getBlockedBy() != null) existingTask.setBlockedBy(updatedTask.getBlockedBy());
+
+        return taskRepo.save(existingTask);
+    }
+
     public Task updateTaskStatus(String taskId, String newStatus) {
         Task task = taskRepo.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
