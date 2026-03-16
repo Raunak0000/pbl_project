@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { mockBackend } from '../../services/mockBackend';
+import { authApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface RegisterPageProps {
@@ -23,7 +23,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onLoginClick, onSuccess, on
         setIsLoading(true);
 
         try {
-            const response = await mockBackend.register(username, email, password);
+            const response = await authApi.register(username, email, password);
             login(response);
             onSuccess();
         } catch (err: any) {

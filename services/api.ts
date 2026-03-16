@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Board, Task } from '../types';
+import { Board, Task, AuthResponse } from '../types';
 
 const BASE_URL = 'http://localhost:8080/api';
 
@@ -10,6 +10,29 @@ const axiosInstance = axios.create({
     },
 });
 
+// Attach JWT token to every request
+axiosInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('syncSpaceToken');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// --- Auth API ---
+export const authApi = {
+    login: async (username: string, password: string): Promise<AuthResponse> => {
+        const response = await axiosInstance.post('/auth/login', { username, password });
+        return response.data;
+    },
+
+    register: async (username: string, email: string, password: string): Promise<AuthResponse> => {
+        const response = await axiosInstance.post('/auth/register', { username, email, password });
+        return response.data;
+    },
+};
+
+// --- Board & Task API ---
 export const api = {
     // --- Boards ---
     getBoards: async (): Promise<Board[]> => {
