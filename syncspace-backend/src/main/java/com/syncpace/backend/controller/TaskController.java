@@ -73,6 +73,12 @@ public class TaskController {
     @PatchMapping("/{taskId}/status")
     public ResponseEntity<?> updateTaskStatus(@AuthenticationPrincipal User user, @PathVariable String taskId,
             @RequestParam String status) {
+        Task existingTask = taskService.getTaskById(taskId);
+        if (existingTask == null)
+            return ResponseEntity.notFound().build();
+        if (!isBoardOwnedByUser(existingTask.getBoardId(), user)) {
+            return ResponseEntity.status(403).body(Map.of("message", "Board not found or access denied"));
+        }
         try {
             TaskStatus taskStatus = TaskStatus.valueOf(status.toUpperCase().replace(" ", "_"));
             Task updatedTask = taskService.updateTaskStatus(taskId, taskStatus);
