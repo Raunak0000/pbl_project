@@ -71,7 +71,8 @@ public class TaskController {
     }
 
     @PatchMapping("/{taskId}/status")
-    public ResponseEntity<?> updateTaskStatus(@PathVariable String taskId, @RequestParam String status) {
+    public ResponseEntity<?> updateTaskStatus(@AuthenticationPrincipal User user, @PathVariable String taskId,
+            @RequestParam String status) {
         try {
             TaskStatus taskStatus = TaskStatus.valueOf(status.toUpperCase().replace(" ", "_"));
             Task updatedTask = taskService.updateTaskStatus(taskId, taskStatus);
