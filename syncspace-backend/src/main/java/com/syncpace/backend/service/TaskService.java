@@ -20,6 +20,10 @@ public class TaskService {
         return taskRepo.findByBoardId(boardId);
     }
 
+    public Task getTaskById(String taskId) {
+        return taskRepo.findById(taskId).orElse(null);
+    }
+
     public Task createTask(Task task) {
         return taskRepo.save(task);
     }

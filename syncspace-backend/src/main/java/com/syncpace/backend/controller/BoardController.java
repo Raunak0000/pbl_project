@@ -1,10 +1,11 @@
 package com.syncpace.backend.controller;
 
 import com.syncpace.backend.model.Board;
+import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.BoardRepo;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.syncpace.backend.repository.TaskRepo;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,26 +14,36 @@ import java.util.List;
 @RequestMapping("/api/board")
 public class BoardController {
     private final BoardRepo boardRepo;
-    private final com.syncpace.backend.repository.TaskRepo taskRepo;
+    private final TaskRepo taskRepo;
 
-    // Standard Constructor Injection (Spring automatically knows to inject here)
-    public BoardController(BoardRepo boardRepo, com.syncpace.backend.repository.TaskRepo taskRepo) {
+    public BoardController(BoardRepo boardRepo, TaskRepo taskRepo) {
         this.boardRepo = boardRepo;
         this.taskRepo = taskRepo;
     }
 
     @GetMapping
-    public ResponseEntity<List<Board>> getAllBoards() {
-        return ResponseEntity.ok(boardRepo.findAll());
+    public ResponseEntity<List<Board>> getAllBoards(@AuthenticationPrincipal User user) {
+        // Only return boards belonging to the authenticated user
+        return ResponseEntity.ok(boardRepo.findByUserId(user.getId()));
     }
 
     @PostMapping
-    public ResponseEntity<Board> createBoard(@RequestBody Board board) {
+    public ResponseEntity<Board> createBoard(@AuthenticationPrincipal User user,
+                                             @RequestBody Board board) {
+        // Set the owner to the authenticated user
+        board.setUserId(user.getId());
         return ResponseEntity.ok(boardRepo.save(board));
     }
 
     @DeleteMapping("/{boardId}")
-    public ResponseEntity<Void> deleteBoard(@PathVariable String boardId) {
+    public ResponseEntity<?> deleteBoard(@AuthenticationPrincipal User user,
+                                         @PathVariable String boardId) {
+        // Verify the board belongs to the authenticated user before deleting
+        Board board = boardRepo.findByIdAndUserId(boardId, user.getId())
+                .orElse(null);
+        if (board == null) {
+            return ResponseEntity.status(403).body("Board not found or access denied");
+        }
         taskRepo.deleteByBoardId(boardId);
         boardRepo.deleteById(boardId);
         return ResponseEntity.ok().build();
