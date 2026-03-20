@@ -1,6 +1,7 @@
 package com.syncpace.backend.service;
 
 import com.syncpace.backend.model.Task;
+import com.syncpace.backend.model.TaskStatus;
 import com.syncpace.backend.repository.TaskRepo;
 import org.springframework.stereotype.Service;
 
@@ -32,29 +33,35 @@ public class TaskService {
         Task existingTask = taskRepo.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
 
-        if (updatedTask.getTitle() != null) existingTask.setTitle(updatedTask.getTitle());
-        if (updatedTask.getDescription() != null) existingTask.setDescription(updatedTask.getDescription());
-        if (updatedTask.getStatus() != null) existingTask.setStatus(updatedTask.getStatus());
-        if (updatedTask.getAssignee() != null) existingTask.setAssignee(updatedTask.getAssignee());
-        if (updatedTask.getDueDate() != null) existingTask.setDueDate(updatedTask.getDueDate());
-        if (updatedTask.getTags() != null) existingTask.setTags(updatedTask.getTags());
-        if (updatedTask.getTeam() != null) existingTask.setTeam(updatedTask.getTeam());
-        if (updatedTask.getBlockedBy() != null) existingTask.setBlockedBy(updatedTask.getBlockedBy());
+        if (updatedTask.getTitle() != null)
+            existingTask.setTitle(updatedTask.getTitle());
+        if (updatedTask.getDescription() != null)
+            existingTask.setDescription(updatedTask.getDescription());
+        if (updatedTask.getStatus() != null)
+            existingTask.setStatus(updatedTask.getStatus());
+        if (updatedTask.getAssignee() != null)
+            existingTask.setAssignee(updatedTask.getAssignee());
+        if (updatedTask.getDueDate() != null)
+            existingTask.setDueDate(updatedTask.getDueDate());
+        if (updatedTask.getTags() != null)
+            existingTask.setTags(updatedTask.getTags());
+        if (updatedTask.getTeam() != null)
+            existingTask.setTeam(updatedTask.getTeam());
+        if (updatedTask.getBlockedBy() != null)
+            existingTask.setBlockedBy(updatedTask.getBlockedBy());
 
         return taskRepo.save(existingTask);
     }
 
-    public Task updateTaskStatus(String taskId, String newStatus) {
+    public Task updateTaskStatus(String taskId, TaskStatus newStatus) {
         Task task = taskRepo.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
 
-        // ENFORCE PROJECT MANAGEMENT RULES (Blocker Logic)
-        if ("Done".equalsIgnoreCase(newStatus) && task.getBlockedBy() != null && !task.getBlockedBy().isEmpty()) {
+        if (newStatus == TaskStatus.DONE && task.getBlockedBy() != null && !task.getBlockedBy().isEmpty()) {
             for (String blockerId : task.getBlockedBy()) {
                 Task blocker = taskRepo.findById(blockerId)
                         .orElseThrow(() -> new RuntimeException("Blocking task not found"));
-
-                if (!"Done".equalsIgnoreCase(blocker.getStatus())) {
+                if (blocker.getStatus() != TaskStatus.DONE) {
                     throw new IllegalStateException("Cannot complete task. Blocked by: " + blocker.getTitle());
                 }
             }

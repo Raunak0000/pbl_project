@@ -21,7 +21,7 @@ public class Task {
     private String description;
 
     @Indexed
-    private String status;
+    private TaskStatus status;
     private String assignee;
     private String dueDate;
     private List<String> tags;
@@ -41,39 +41,99 @@ public class Task {
     }
 
     // --- Standard Java Getters and Setters ---
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    public String getId() {
+        return id;
+    }
 
-    public String getBoardId() { return boardId; }
-    public void setBoardId(String boardId) { this.boardId = boardId; }
+    public void setId(String id) {
+        this.id = id;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public String getBoardId() {
+        return boardId;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setBoardId(String boardId) {
+        this.boardId = boardId;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getTitle() {
+        return title;
+    }
 
-    public String getAssignee() { return assignee; }
-    public void setAssignee(String assignee) { this.assignee = assignee; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public String getDueDate() { return dueDate; }
-    public void setDueDate(String dueDate) { this.dueDate = dueDate; }
+    public String getDescription() {
+        return description;
+    }
 
-    public List<String> getTags() { return tags; }
-    public void setTags(List<String> tags) { this.tags = tags; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getTeam() { return team; }
-    public void setTeam(String team) { this.team = team; }
+    public TaskStatus getStatus() {
+        return status;
+    }
 
-    public List<String> getBlockedBy() { return blockedBy; }
-    public void setBlockedBy(List<String> blockedBy) { this.blockedBy = blockedBy; }
+    public void setStatus(TaskStatus status) {
+        this.status = status;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getAssignee() {
+        return assignee;
+    }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public void setAssignee(String assignee) {
+        this.assignee = assignee;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
+    }
+
+    public List<String> getBlockedBy() {
+        return blockedBy;
+    }
+
+    public void setBlockedBy(List<String> blockedBy) {
+        this.blockedBy = blockedBy;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

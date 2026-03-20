@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface BoardRepo extends MongoRepository<Board,String> {
+public interface BoardRepo extends MongoRepository<Board, String> {
     // Fetch all boards belonging to a specific user
     List<Board> findByUserId(String userId);
 

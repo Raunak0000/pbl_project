@@ -1,8 +1,13 @@
 package com.syncpace.backend.controller;
 
 import com.syncpace.backend.config.JwtService;
+import com.syncpace.backend.dto.LoginRequest;
+import com.syncpace.backend.dto.RegisterRequest;
 import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.UserRepo;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +30,10 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String email = request.get("email");
-        String password = request.get("password");
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        String username = request.getUsername();
+        String email = request.getEmail();
+        String password = request.getPassword();
 
         if (userRepo.existsByUsername(username)) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username already taken"));
@@ -56,9 +61,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String password = request.get("password");
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        String username = request.getUsername();
+        String password = request.getPassword();
 
         var userOpt = userRepo.findByUsername(username);
 
