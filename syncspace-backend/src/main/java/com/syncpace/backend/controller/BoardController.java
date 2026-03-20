@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/board")
-@CrossOrigin(origins = "*")
 public class BoardController {
     private final BoardRepo boardRepo;
     private final com.syncpace.backend.repository.TaskRepo taskRepo;
