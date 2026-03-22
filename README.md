@@ -2,10 +2,13 @@
 
 <div align="center">
 
-**A modern, collaborative task management platform with real-time synchronization**
+**A full-stack, real-time collaborative task management platform**
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19.2-61dafb.svg)](https://reactjs.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-6DB33F.svg)](https://spring.io/projects/spring-boot)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B.svg)](https://www.mongodb.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6.svg)](https://www.typescriptlang.org/)
+[![Java](https://img.shields.io/badge/Java-21-ED8B00.svg)](https://openjdk.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2-646cff.svg)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -20,9 +23,8 @@
 - [Tech Stack](#-tech-stack)
 - [Getting Started](#-getting-started)
 - [Project Structure](#-project-structure)
-- [Usage Guide](#-usage-guide)
+- [API Reference](#-api-reference)
 - [Architecture](#-architecture)
-- [Development](#-development)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -31,16 +33,17 @@
 
 ## 🎯 Overview
 
-SyncSpace is a full-featured collaborative task management application designed for teams who need real-time synchronization and powerful organization tools. Built with modern web technologies, it provides an intuitive interface for managing projects through multiple views (Kanban, Calendar, Chat) while supporting live collaboration across team members.
+SyncSpace is a full-stack collaborative task management application with a React frontend and a Spring Boot backend, persisted to MongoDB. It features real-time cross-tab synchronization, a Kanban board with drag-and-drop, a calendar view, a rich-text editor, team chat, and a command palette — all wrapped in a sleek GitHub-Dark Navy theme.
 
 ### Key Highlights
 
-- 🔄 **Real-time Collaboration** - See changes instantly as team members work
-- 🎨 **Multiple Views** - Switch between Kanban boards, Calendar, and Chat
-- 🌓 **GitHub-Dark Navy Theme** - A beautiful, deep navy theme with green action accents inspired by GitHub
-- ☕ **Spring Boot Backend** - Powered by Java Spring Boot and MongoDB for persistence
-- 👥 **Role-Based Access** - Admin and user roles with secure, ownership-based board access
-- 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
+- ☕ **Spring Boot + MongoDB Backend** — RESTful API with JWT authentication and ownership-based authorization
+- 🎨 **GitHub-Dark Navy Theme** — Deep navy backgrounds, green action accents, and zero white
+- 🔄 **Real-time Sync** — Cross-tab live editing via custom event broadcasting (WebSocket-ready)
+- 📊 **Multiple Views** — Kanban board, Calendar, and Chat
+- ⌨️ **Command Palette** — `Cmd + K` keyboard shortcut for quick navigation
+- 🔐 **Role-Based Access** — Admin and User roles with secure, ownership-based board access
+- ✍️ **Rich Text Editor** — Full-featured WYSIWYG editor powered by Tiptap / ProseMirror
 
 ---
 
@@ -48,62 +51,31 @@ SyncSpace is a full-featured collaborative task management application designed 
 
 ### 📊 Task Management
 
-- **Kanban Board View**
-  - Drag-and-drop tasks between columns (To Do, In Progress, Done, Blocked)
-  - Visual task cards with status indicators
-  - Quick task creation and editing
-  - Real-time board updates across all users
+- **Kanban Board** — Drag-and-drop tasks between To Do, In Progress, and Done columns. Reorder columns. Filter by status, sort by date/priority. Dependency validation prevents moving blocked tasks to Done.
+- **Calendar View** — Month-by-month task visualization by due date with day-cell task previews.
+- **Task Modal** — Full-featured task editor with title, description (Tiptap), status, assignee, due date, priority, tags, team, and task dependency (`blockedBy`) fields.
+- **Task Cards** — Visual status badges, priority dots, due-date indicators (overdue/due soon/upcoming), assignee avatars, tag chips, and checklist progress bars.
 
-- **Calendar View**
-  - Month-by-month task visualization
-  - Date-based task organization
-  - Quick date navigation
-  - Task deadlines and scheduling
+### 👥 Collaboration
 
-- **Rich Task Editor**
-  - Full-featured WYSIWYG editor (Tiptap)
-  - Support for headers, lists, links, bold, italic
-  - Auto-save functionality (750ms debounce)
-  - Task metadata (status, assignee, dates)
-
-### 👥 Collaboration Features
-
-- **Live Editing**
-  - Real-time synchronization using Socket.io client
-  - Presence indicators showing active users
-  - Conflict-free collaborative editing
-  - User activity tracking
-
-- **Chat View**
-  - Team communication integrated with tasks
-  - Message history
-  - User presence indicators
+- **Live Editing** — Real-time synchronization across browser tabs using `localStorage` events and `CustomEvent` broadcasting. Architecture is ready for a direct swap to Socket.io / WebSockets.
+- **Presence Indicators** — See which users are actively editing which tasks.
+- **Chat View** — Team communication integrated alongside task boards.
+- **Board Deletion Sync** — When an admin deletes a project, it vanishes from all active sessions instantly.
 
 ### 🔐 Authentication & Authorization
 
-- **User Management**
-  - Secure login and registration
-  - Session management with JWT-like tokens
-  - Password authentication (mock backend)
-  - First user becomes admin automatically
-
-- **Admin Dashboard**
-  - User management interface
-  - Role assignment (Admin/User)
-  - User deletion capabilities
-  - System overview and statistics
+- **JWT Authentication** — Secure login and registration with BCrypt password hashing and JJWT tokens.
+- **Ownership-Based Access** — Users only see and modify their own boards. All task CRUD operations verify board ownership on the backend before proceeding.
+- **Admin Dashboard** — User management interface for admins (view all users, delete users, inspect roles).
+- **Auto Admin** — The first registered user is automatically assigned the `ADMIN` role.
 
 ### 🎨 User Experience
 
-- **Theme System**
-  - Stunning GitHub-Dark Navy aesthetics
-  - Deep navy backgrounds (`#0D1117`) with subtle borders and sleek green accents
-  - Seamless, modern, and high-contrast user interface
-
-- **Responsive Design**
-  - Mobile-first approach
-  - Adaptive layouts for all screen sizes
-  - Touch-friendly interactions
+- **GitHub-Dark Navy Theme** — A custom color palette (`#0D1117` page bg, `#161B22` surfaces, `#21262D` elevated surfaces, `#3FB950` green accent, `#58A6FF` blue accent, `#F85149` danger) applied across all UI components.
+- **Command Palette** — `Cmd + K` to search boards and filter teams without leaving the keyboard.
+- **Framer Motion Animations** — Smooth entrance animations, hover effects, and micro-interactions throughout.
+- **Responsive Design** — Collapsible sidebar, mobile header, and adaptive layouts for all screen sizes.
 
 ---
 
@@ -112,27 +84,28 @@ SyncSpace is a full-featured collaborative task management application designed 
 ### Frontend
 
 | Technology | Version | Purpose |
-|------------|---------|---------|
-| **React** | 19.2.0 | UI framework |
-| **TypeScript** | 5.8.2 | Type safety |
-| **Vite** | 6.2.0 | Build tool & dev server |
-| **Tailwind CSS** | CDN | Utility-first styling |
-| **Socket.io Client** | 4.8.3 | Real-time communication |
+|---|---|---|
+| **React** | 19.2 | UI framework |
+| **TypeScript** | 5.8 | Type safety |
+| **Vite** | 6.2 | Build tool & dev server |
+| **Tailwind CSS** | CDN | Utility-first styling (config in `index.html`) |
+| **Framer Motion** | 11.x | Animations & transitions |
+| **Tiptap** | 2.5.7 | Rich text editor (ProseMirror) |
+| **Axios** | 1.13 | HTTP client for API calls |
+| **Lucide React** | 0.563 | Icon library |
+| **Socket.io Client** | 4.8.3 | Real-time communication (ready) |
 
-### Rich Text Editing
+### Backend
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| **@tiptap/react** | 2.5.7 | React integration |
-| **@tiptap/core** | 2.5.7 | Core editor |
-| **@tiptap/starter-kit** | 2.5.7 | Essential extensions |
-| **ProseMirror** | 1.x | Underlying editor engine |
-
-### State Management & Context
-
-- React Context API for global state
-- Custom hooks for auth, theme, and live editing
-- LocalStorage for persistence
+| Technology | Version | Purpose |
+|---|---|---|
+| **Spring Boot** | 4.0.3 | REST API framework |
+| **Java** | 21 | Runtime |
+| **MongoDB** | — | NoSQL database |
+| **Spring Security** | — | Authentication & authorization |
+| **JJWT** | 0.12.6 | JWT token generation & validation |
+| **Lombok** | — | Boilerplate reduction |
+| **Spring Validation** | — | DTO request validation |
 
 ---
 
@@ -140,43 +113,47 @@ SyncSpace is a full-featured collaborative task management application designed 
 
 ### Prerequisites
 
-- **Node.js** (v16 or higher)
-- **npm** or **yarn**
-- Modern web browser (Chrome, Firefox, Safari, Edge)
+- **Node.js** v16+
+- **Java** 21
+- **Maven** 3.9+
+- **MongoDB** (local instance or Atlas)
 
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/syncspace.git
-   cd syncspace
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open your browser**
-   
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-### Build for Production
+### 1. Clone the Repository
 
 ```bash
-# Build the application
-npm run build
-
-# Preview the production build
-npm run preview
+git clone https://github.com/yourusername/syncspace.git
+cd syncspace
 ```
 
-The build output will be in the `dist/` directory.
+### 2. Start the Backend
+
+```bash
+cd syncspace-backend
+
+# Configure your MongoDB connection in src/main/resources/application.properties
+# Set JWT_SECRET in the root .env file
+
+./mvnw spring-boot:run
+```
+
+The backend will start on `http://localhost:8080`.
+
+### 3. Start the Frontend
+
+```bash
+# From the project root
+npm install
+npm run dev
+```
+
+The frontend will start on `http://localhost:3000`.
+
+### 4. Build for Production
+
+```bash
+npm run build      # Output in dist/
+npm run preview    # Preview the production build
+```
 
 ---
 
@@ -184,78 +161,98 @@ The build output will be in the `dist/` directory.
 
 ```
 synnnncspace-main/
-├── components/              # React components
-│   ├── auth/               # Authentication components
-│   │   ├── LoginPage.tsx
-│   │   └── RegisterPage.tsx
-│   ├── admin/              # Admin-only components
-│   │   └── AdminDashboard.tsx
-│   ├── CalendarView.tsx    # Calendar interface
-│   ├── ChatView.tsx        # Chat interface
-│   ├── Dashboard.tsx       # Main dashboard
-│   ├── Header.tsx          # App header/navigation
-│   ├── KanbanBoard.tsx     # Kanban board view
-│   ├── LandingPage.tsx     # Landing page
-│   ├── PresenceIndicator.tsx
-│   ├── TaskCard.tsx        # Individual task cards
-│   ├── TaskEditor.tsx      # Rich text task editor
-│   ├── TaskModal.tsx       # Task detail modal
-│   ├── ThemeToggle.tsx     # Dark mode toggle
-│   └── TiptapEditor.tsx    # Tiptap editor wrapper
-├── contexts/               # React Context providers
-│   ├── AuthContext.tsx     # Authentication state
-│   ├── LiveEditingContext.tsx # Real-time sync
-│   └── ThemeContext.tsx    # Theme management
-├── services/               # Business logic & APIs
-│   ├── liveEditingService.ts  # WebSocket/live editing
-│   └── mockBackend.ts      # Mock authentication API
-├── App.tsx                 # Root component
-├── index.tsx              # Application entry point
-├── types.ts               # TypeScript type definitions
-├── vite.config.ts         # Vite configuration
-├── tsconfig.json          # TypeScript configuration
-└── package.json           # Dependencies & scripts
+├── components/                  # React UI Components
+│   ├── auth/
+│   │   ├── LoginPage.tsx        # Login form
+│   │   └── RegisterPage.tsx     # Registration form
+│   ├── admin/
+│   │   └── AdminDashboard.tsx   # Admin user management
+│   ├── CalendarView.tsx         # Calendar month view
+│   ├── ChatView.tsx             # Team chat interface
+│   ├── CommandPalette.tsx       # Cmd+K quick search
+│   ├── Dashboard.tsx            # Main dashboard + sidebar
+│   ├── Header.tsx               # App header bar
+│   ├── KanbanBoard.tsx          # Kanban columns + drag-and-drop
+│   ├── LandingPage.tsx          # Marketing landing page
+│   ├── PresenceIndicator.tsx    # Live editing presence dots
+│   ├── TaskCard.tsx             # Individual task card
+│   ├── TaskEditor.tsx           # Inline task editor (Tiptap)
+│   ├── TaskModal.tsx            # Full task detail modal
+│   ├── ThemeToggle.tsx          # Dark/light mode toggle
+│   └── TiptapEditor.tsx         # Tiptap WYSIWYG wrapper
+├── contexts/
+│   ├── AuthContext.tsx           # Auth state (user, token, login/logout)
+│   ├── LiveEditingContext.tsx    # Presence & active editors
+│   └── ThemeContext.tsx          # Theme preferences
+├── services/
+│   ├── api.ts                   # Axios API client (boards, tasks, auth)
+│   ├── liveEditingService.ts    # Real-time event bus (cross-tab sync)
+│   └── mockBackend.ts           # Legacy mock auth (localStorage)
+├── syncspace-backend/           # Spring Boot Backend
+│   └── src/main/java/com/syncpace/backend/
+│       ├── BackendApplication.java
+│       ├── config/
+│       │   ├── SecurityConfig.java       # CORS, JWT filter, BCrypt
+│       │   ├── JwtService.java           # Token generation & validation
+│       │   ├── JwtAuthFilter.java        # Per-request JWT verification
+│       │   └── GlobalExceptionHandler.java
+│       ├── controller/
+│       │   ├── AuthController.java       # POST /api/auth/login, /register
+│       │   ├── BoardController.java      # CRUD /api/board
+│       │   └── TaskController.java       # CRUD /api/tasks
+│       ├── dto/
+│       │   ├── LoginRequest.java
+│       │   └── RegisterRequest.java
+│       ├── model/
+│       │   ├── Board.java
+│       │   ├── Task.java
+│       │   ├── TaskStatus.java
+│       │   └── User.java
+│       ├── repository/
+│       │   ├── BoardRepo.java
+│       │   ├── TaskRepo.java
+│       │   └── UserRepo.java
+│       └── service/
+│           └── TaskService.java
+├── App.tsx                      # Root component (routing, state)
+├── index.tsx                    # Entry point
+├── index.html                   # HTML shell + Tailwind config
+├── types.ts                     # Shared TypeScript types
+├── vite.config.ts               # Vite configuration
+├── package.json                 # Frontend dependencies
+└── .env                         # JWT_SECRET
 ```
 
 ---
 
-## 📖 Usage Guide
+## 📡 API Reference
 
-### First Time Setup
+### Authentication
 
-1. **Register an Account**
-   - Click "Register" on the landing page
-   - The first user registered becomes an admin
-   - Subsequent users are regular users
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/register` | Register a new user (first user → ADMIN) |
+| `POST` | `/api/auth/login` | Login and receive a JWT token |
 
-2. **Create Your First Board**
-   - Navigate to the Dashboard
-   - Boards are created automatically with sample tasks
+### Boards
 
-3. **Create Tasks**
-   - Click the "+" button in any column
-   - Enter task details in the task editor
-   - Tasks auto-save as you type
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/board` | Get all boards for the authenticated user |
+| `POST` | `/api/board` | Create a new board |
+| `DELETE` | `/api/board/:id` | Delete a board (owner only) |
 
-### Working with Tasks
+### Tasks
 
-- **Edit**: Click on any task card to open the editor
-- **Move**: Drag tasks between columns on the Kanban board
-- **View**: Switch between Kanban and Calendar views
-- **Format**: Use the rich text editor for detailed descriptions
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/tasks/board/:boardId` | Get all tasks for a board |
+| `POST` | `/api/tasks` | Create a new task |
+| `PUT` | `/api/tasks/:id` | Update a task |
+| `PATCH` | `/api/tasks/:id/status?status=` | Update task status |
+| `DELETE` | `/api/tasks/:id` | Delete a task |
 
-### Admin Features
-
-- Access the Admin Dashboard from the header menu
-- View all registered users
-- Delete users (except yourself)
-- Monitor user roles
-
-### Collaboration
-
-- Multiple users can edit simultaneously
-- See real-time presence indicators
-- Changes sync automatically across all connected clients
+> All board and task endpoints require a valid JWT in the `Authorization: Bearer <token>` header and verify board ownership server-side.
 
 ---
 
@@ -264,100 +261,63 @@ synnnncspace-main/
 ### Data Flow
 
 ```
-User Action → Component → Context → Service → Storage
-                                      ↓
-                                 Live Editing
-                                      ↓
-                              Other Clients
+User Action → React Component → Context/State → Axios API Client → Spring Boot Controller
+                                                                          ↓
+                                                                    TaskService
+                                                                          ↓
+                                                                     MongoDB
+```
+
+### Real-time Sync Flow
+
+```
+User Action → liveEditingService.broadcast() → localStorage event + CustomEvent
+                                                         ↓
+                                                Other Browser Tabs
+                                                         ↓
+                                              App.tsx event handler → setState()
 ```
 
 ### State Management
 
-- **AuthContext**: User authentication, session management
-- **ThemeContext**: Dark/light mode preferences
-- **LiveEditingContext**: Real-time synchronization
+| Context | Purpose |
+|---|---|
+| **AuthContext** | User session, JWT token, login/logout, role detection |
+| **ThemeContext** | Dark/light mode preference, persisted to localStorage |
+| **LiveEditingContext** | Active editor tracking, presence indicators |
 
-### Storage Strategy
+### Security
 
-The application leverages a real backend for persistence:
-- **Spring Boot API** handling business logic.
-- **MongoDB** storing Users, Tasks, Boards, and Roles securely.
-
-> **Note**: While the database permanently stores the data, the "Live Editing" module currently uses a cross-tab simulation. Upgrading this to real WebSockets via Spring Boot is supported and straightforward.
-
-### Live Editing Implementation
-
-The app uses a simulated live editing system that can be easily replaced with real WebSocket connections:
-
-- **Current**: Custom events + localStorage for same-tab communication
-- **Future**: Socket.io connection to a real backend server
-- **Commented code** in `liveEditingService.ts` shows WebSocket integration points
-
----
-
-## 🔧 Development
-
-### Available Scripts
-
-```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-### Environment Variables
-
-Create a `.env.local` file for environment-specific configuration:
-
-```env
-VITE_API_URL=http://localhost:3001
-VITE_WS_URL=ws://localhost:3001
-```
-
-### Code Style
-
-- TypeScript strict mode enabled
-- Functional components with hooks
-- Context API for state management
-- Tailwind for styling
+- **BCrypt** password hashing on registration
+- **JWT tokens** (JJWT) issued on login, validated on every request via `JwtAuthFilter`
+- **Ownership checks** — `BoardController` and `TaskController` verify `user.id == board.userId` before any operation
+- **CORS** configured in `SecurityConfig` to allow the frontend origin
 
 ---
 
 ## 🗺 Roadmap
 
-### Current Status: Full Stack Integration ✅
+### Completed ✅
 
-### Backend Stack
-- **Node/Express to Spring Boot** - The application was successfully migrated from a mock backend to a real Java Spring Boot application.
-- **Database** - Integrated with MongoDB for robust data storage.
-- **Security** - Custom JWT and ownership-based endpoints (users only see/modify their own boards).
+- [x] React 19 + TypeScript frontend with Kanban, Calendar, and Chat views
+- [x] Spring Boot 4 + MongoDB backend with JWT auth
+- [x] Ownership-based board and task authorization
+- [x] GitHub-Dark Navy theme across all components
+- [x] Command palette (`Cmd + K`)
+- [x] Cross-tab live editing sync
+- [x] Framer Motion animations
+- [x] Tiptap rich text editor
+- [x] Admin dashboard (user management)
 
-### Planned Features
+### Planned
 
-- [ ] **Enhanced Features**
-  - [ ] File attachments on tasks
-  - [ ] Task comments and activity log
-  - [ ] Advanced filtering and search
-  - [ ] Task templates
-  - [ ] Email notifications
-  - [ ] Export to CSV/PDF
-
-- [ ] **Collaboration**
-  - [ ] @mentions in chat
-  - [ ] Task assignments
-  - [ ] Team workspaces
-  - [ ] Activity feeds
-
-- [ ] **DevOps**
-  - [ ] Docker containerization
-  - [ ] CI/CD pipeline
-  - [ ] Automated testing
-  - [ ] Production deployment
+- [ ] **Real WebSocket Server** — Replace cross-tab simulation with Spring Boot WebSocket / Socket.io for true multi-device real-time sync
+- [ ] **File Attachments** — Upload and attach files to tasks
+- [ ] **Task Comments & Activity Log** — Threaded discussions on tasks
+- [ ] **Advanced Search & Filtering** — Full-text search across all boards and tasks
+- [ ] **Email Notifications** — Alerts for due dates, assignments, and mentions
+- [ ] **Docker Containerization** — Single-command deployment with Docker Compose
+- [ ] **CI/CD Pipeline** — Automated testing and deployment
 
 ---
 
@@ -382,22 +342,25 @@ Contributions are welcome! Please follow these steps:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **Tiptap** - Excellent headless rich text editor
-- **Tailwind CSS** - Utility-first CSS framework
-- **Socket.io** - Real-time communication library
-- **React Team** - Amazing UI library
+- **Spring Boot** — Robust Java backend framework
+- **React** — Declarative UI library
+- **Tiptap** — Headless rich text editor
+- **Tailwind CSS** — Utility-first CSS framework
+- **Framer Motion** — Production-ready animation library
+- **Lucide** — Beautiful open-source icon set
+- **JJWT** — JSON Web Token library for Java
 
 ---
 
 <div align="center">
 
-**Built with ❤️ using React and TypeScript**
+**Built with ❤️ using React, Spring Boot, and MongoDB**
 
 [Report Bug](https://github.com/yourusername/syncspace/issues) · [Request Feature](https://github.com/yourusername/syncspace/issues)
 
