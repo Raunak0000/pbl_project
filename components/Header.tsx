@@ -73,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
   }, [boards, onSelectBoard, setViewContext]);
 
   return (
-    <header className="flex-shrink-0 bg-white dark:bg-brand-surface border-b border-slate-200 dark:border-white/5 p-4 flex items-center justify-between z-20 shadow-sm relative">
+    <header className="flex-shrink-0 bg-[#161B22] border-b border-[#21262D] p-4 flex items-center justify-between z-20 relative">
       <CommandPalette
         open={isPaletteOpen}
         onOpenChange={setIsPaletteOpen}
@@ -83,37 +83,37 @@ const Header: React.FC<HeaderProps> = ({
 
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <div onClick={onGoToLanding} className="cursor-pointer flex items-center gap-2 group mr-4">
-          <div className="w-8 h-8 bg-slate-900 dark:bg-white rounded flex items-center justify-center text-white dark:text-brand-dark font-bold font-mono text-sm group-hover:scale-105 transition-transform">S</div>
-          <span className="font-bold tracking-tight font-mono text-lg hidden sm:block">syncSpace</span>
+          <div className="w-8 h-8 bg-[#3FB950] rounded flex items-center justify-center text-[#0D1117] font-bold font-mono text-sm group-hover:scale-105 transition-transform">S</div>
+          <span className="font-bold tracking-tight font-mono text-lg text-[#E6EDF3] hidden sm:block">syncSpace</span>
         </div>
 
-        <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden sm:block"></div>
+        <div className="h-6 w-px bg-[#30363D] hidden sm:block"></div>
 
         <button
           onClick={onGoBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors group"
+          className="flex items-center gap-2 text-[#8B949E] hover:text-[#E6EDF3] transition-colors group"
         >
-          <div className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+          <div className="p-1.5 rounded-md hover:bg-[#21262D] transition-colors">
             <ArrowLeft size={18} />
           </div>
         </button>
 
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{boardName}</h1>
+        <h1 className="text-xl font-bold text-[#E6EDF3] truncate max-w-[200px]">{boardName}</h1>
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
         {/* View Switcher */}
-        <div className="hidden md:flex items-center p-1 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5">
+        <div className="hidden md:flex items-center p-1 bg-[#21262D] rounded-lg border border-[#30363D]">
           <button
             onClick={() => setView('kanban')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-all ${currentView === 'kanban' ? 'bg-white dark:bg-brand-surface text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-all ${currentView === 'kanban' ? 'bg-[#0D1117] text-[#E6EDF3] shadow-sm' : 'text-[#8B949E] hover:text-[#E6EDF3]'}`}
           >
             <Layout size={14} />
             Board
           </button>
           <button
             onClick={() => setView('calendar')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-all ${currentView === 'calendar' ? 'bg-white dark:bg-brand-surface text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-all ${currentView === 'calendar' ? 'bg-[#0D1117] text-[#E6EDF3] shadow-sm' : 'text-[#8B949E] hover:text-[#E6EDF3]'}`}
           >
             <CalendarIcon size={14} />
             Calendar
@@ -122,23 +122,23 @@ const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => setIsPaletteOpen(true)}
-          className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-400 dark:text-slate-500 hover:border-slate-300 dark:hover:border-white/20 transition-colors"
+          className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-[#21262D] border border-[#30363D] text-xs font-mono text-[#8B949E] hover:border-[#8B949E] transition-colors"
         >
           <Search size={14} />
           <span className="hidden xl:inline">Search</span>
-          <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-[10px] font-bold">Cmd+K</kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-[#0D1117] text-[10px] font-bold text-[#8B949E]">Cmd+K</kbd>
         </button>
 
         {/* Presence & Context */}
-        <div className="flex items-center gap-4 border-l border-slate-200 dark:border-white/10 pl-4 ml-2">
+        <div className="flex items-center gap-4 border-l border-[#30363D] pl-4 ml-2">
 
           {/* View Context Simulator */}
           <div className="hidden xl:flex items-center gap-2">
-            <Users size={16} className="text-slate-400" />
+            <Users size={16} className="text-[#8B949E]" />
             <select
               value={viewContext}
               onChange={(e) => setViewContext(e.target.value)}
-              className="bg-transparent text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer hover:text-accent-primary transition-colors"
+              className="bg-transparent text-sm font-medium text-[#E6EDF3] focus:outline-none cursor-pointer hover:text-[#3FB950] transition-colors"
             >
               <option value="Manager">Manager View</option>
               {TEAMS.map(team => (
@@ -158,13 +158,13 @@ const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={onNewTask}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-bold text-sm shadow-md hover:shadow-lg"
+          className="flex items-center gap-2 px-4 py-2 bg-[#238636] text-white rounded-xl hover:bg-[#2EA043] transition-colors font-bold text-sm shadow-md hover:shadow-lg"
         >
           <Plus size={16} />
           <span className="hidden sm:inline">New Task</span>
         </button>
 
-        <button onClick={onLogout} className="p-2 text-slate-400 hover:text-status-error transition-colors" title="Logout">
+        <button onClick={onLogout} className="p-2 text-[#8B949E] hover:text-[#F85149] transition-colors" title="Logout">
           <LogOut size={18} />
         </button>
       </div>

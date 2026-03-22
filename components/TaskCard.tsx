@@ -27,22 +27,22 @@ const getDueDateState = (dueDate?: string): 'overdue' | 'due_soon' | 'upcoming' 
 };
 
 const dueDateColors: Record<string, string> = {
-  overdue: 'bg-red-50 text-red-600 border-red-200',
-  due_soon: 'bg-amber-50 text-amber-600 border-amber-200',
-  upcoming: 'bg-green-50 text-green-600 border-green-200',
+  overdue: 'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
+  due_soon: 'bg-[#3D2E0A] text-[#D29922] border-[#5C440F]',
+  upcoming: 'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
 };
 
 const priorityDotColors: Record<string, string> = {
-  high: 'bg-red-500',
-  medium: 'bg-amber-400',
-  low: 'bg-gray-300',
+  high: 'bg-[#F85149]',
+  medium: 'bg-[#D29922]',
+  low: 'bg-[#484F58]',
 };
 
 const statusBadgeColors: Record<string, string> = {
-  'To Do': 'bg-purple-50 text-purple-600 border-purple-200',
-  'In Progress': 'bg-blue-50 text-blue-600 border-blue-200',
-  'Done': 'bg-green-50 text-green-600 border-green-200',
-  'Blocked': 'bg-red-50 text-red-600 border-red-200',
+  'To Do': 'bg-[#2D1F63] text-[#A78BFA] border-[#4C3D7A]',
+  'In Progress': 'bg-[#1E3A5F] text-[#58A6FF] border-[#2D5A8E]',
+  'Done': 'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
+  'Blocked': 'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
 };
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isBlocked }) => {
@@ -139,15 +139,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
       variants={shakeVariants}
       className={`
         relative
-        bg-white rounded-xl p-4
-        border border-gray-200
-        shadow-sm hover:shadow-md
+        bg-[#161B22] rounded-xl p-4
+        border border-[#30363D]
+        hover:border-[#8B949E]
         cursor-pointer transition-all duration-200 ease-in-out
-        ${isInProgress ? 'border-l-4 border-l-blue-400' : ''}
-        ${isDone ? 'opacity-70' : ''}
-        ${isDragging ? 'scale-[1.02] shadow-xl ring-1 ring-blue-300 opacity-80 rotate-1' : 'hover:scale-[1.01]'}
-        ${isOver ? 'ring-2 ring-blue-300 ring-offset-2' : ''}
-        ${editors.length > 0 ? 'ring-1 ring-blue-400' : ''}
+        ${isInProgress ? 'border-l-4 border-l-[#3FB950]' : ''}
+        ${isDone ? 'opacity-50' : ''}
+        ${isDragging ? 'scale-[1.02] shadow-xl ring-1 ring-[#58A6FF] opacity-80 rotate-1' : 'hover:scale-[1.01]'}
+        ${isOver ? 'ring-2 ring-[#58A6FF] ring-offset-2 ring-offset-[#0D1117]' : ''}
+        ${editors.length > 0 ? 'ring-1 ring-[#58A6FF]' : ''}
       `}
     >
       <div
@@ -167,8 +167,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
 
         {/* Live editing indicator */}
         {editors.length > 0 && (
-          <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-blue-500">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+          <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-[#58A6FF]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#58A6FF] animate-pulse" />
             <span>
               {editors.map(e => e.userName).join(', ')} editing...
             </span>
@@ -177,17 +177,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
 
         {/* Title + Team */}
         <div className="flex justify-between items-start gap-3 mb-2 pr-4">
-          <h3 className={`font-semibold text-gray-800 text-sm leading-snug break-words w-full ${isDone ? 'line-through text-gray-400' : ''}`}>
+          <h3 className={`font-semibold text-[#E6EDF3] text-sm leading-snug break-words w-full ${isDone ? 'line-through text-[#484F58]' : ''}`}>
             {task.title}
           </h3>
           <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
             {task.blockedBy && task.blockedBy.length > 0 && (
-              <div title="Blocked by dependency" className="flex items-center justify-center p-0.5 bg-red-50 rounded">
-                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+              <div title="Blocked by dependency" className="flex items-center justify-center p-0.5 bg-[#3D0F0F] rounded">
+                <AlertCircle className="w-3.5 h-3.5 text-[#F85149]" />
               </div>
             )}
             {task.team && task.team !== 'Unassigned' && (
-              <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded border border-gray-200">
+              <span className="text-[10px] font-medium uppercase px-1.5 py-0.5 bg-[#21262D] text-[#8B949E] rounded border border-[#30363D]">
                 {task.team.substring(0, 3)}
               </span>
             )}
@@ -196,7 +196,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
 
         {/* Status badge + Due date badge — always visible */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusBadgeColors[task.status] || 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusBadgeColors[task.status] || 'bg-[#21262D] text-[#8B949E] border-[#30363D]'}`}>
             {task.status}
           </span>
 
@@ -211,15 +211,15 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
         {/* Tags and Assignee */}
         <div className="flex flex-wrap items-center gap-1.5 min-h-[1.25rem]">
           {task.tags?.map(tag => (
-            <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">
+            <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#21262D] text-[#8B949E] border border-[#30363D]">
               {tag}
             </span>
           ))}
 
           {task.assignee && (
             <div className="ml-auto flex items-center">
-              <div className="w-5 h-5 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-blue-200 border border-blue-200 flex items-center justify-center" title={task.assignee}>
-                <span className="text-[10px] font-bold text-blue-600">{task.assignee.substring(0, 2).toUpperCase()}</span>
+              <div className="w-5 h-5 rounded-full overflow-hidden bg-[#1F3D20] border border-[#1A5C2E] flex items-center justify-center" title={task.assignee}>
+                <span className="text-[10px] font-bold text-[#3FB950]">{task.assignee.substring(0, 2).toUpperCase()}</span>
               </div>
             </div>
           )}
@@ -227,16 +227,16 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
 
         {checklistProgress && (
           <div className="mt-3">
-            <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1.5">
+            <div className="flex items-center justify-between text-[10px] text-[#8B949E] mb-1.5">
               <span className="flex items-center gap-1">
                 <CheckSquare className="w-3 h-3" />
                 {Math.round(checklistProgress.percent)}%
               </span>
               <span>{checklistProgress.completed}/{checklistProgress.total}</span>
             </div>
-            <div className="h-1 w-full rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-1 w-full rounded-full bg-[#21262D] overflow-hidden">
               <div
-                className="h-full rounded-full bg-blue-400 transition-all duration-300"
+                className="h-full rounded-full bg-[#3FB950] transition-all duration-300"
                 style={{ width: `${checklistProgress.percent}%` }}
               />
             </div>
