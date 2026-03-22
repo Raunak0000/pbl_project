@@ -122,6 +122,9 @@ const App: React.FC = () => {
           if (board.id !== boardId) return board;
           return { ...board, tasks: board.tasks.filter(t => t.id !== taskId) };
         }));
+      } else if (event.type === 'BOARD_DELETE') {
+        const { boardId } = event.payload;
+        setBoards(prevBoards => prevBoards.filter(b => b.id !== boardId));
       }
     });
 
@@ -196,6 +199,10 @@ const App: React.FC = () => {
     try {
       await api.deleteBoard(boardId);
       setBoards(prev => prev.filter(b => b.id !== boardId));
+      
+      // Broadcast deletion
+      liveEditingService.broadcastBoardDelete(boardId);
+      
       if (activeBoardId === boardId) {
         setActiveBoardId(null);
         setAppView('dashboard');
@@ -476,7 +483,7 @@ const App: React.FC = () => {
           boardName={activeBoard.name}
           currentView={boardView}
           setView={setBoardView}
-          onNewTask={() => handleOpenModal(null)}
+          onNewTask={() => handleOpenModal({ id: '', title: '', description: '', status: 'To Do', tags: [], team: viewContext === 'Manager' ? 'Unassigned' : viewContext } as any)}
           onGoBack={handleGoToDashboard}
           onGoToLanding={handleGoToLanding}
           onLogout={handleLogout}

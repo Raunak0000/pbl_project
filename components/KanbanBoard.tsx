@@ -31,8 +31,9 @@ const KanbanColumn: React.FC<{
     onTaskDrop: (draggedTaskId: string, newStatus: Status, targetTaskId: string | null) => void;
     onColumnDrop: (draggedColumn: Status, targetColumn: Status) => void;
     onSelectTask: (task: Task) => void;
+    viewContext: string;
     blockedTaskId?: string | null;
-}> = ({ status, tasks, onTaskDrop, onColumnDrop, onSelectTask, blockedTaskId }) => {
+}> = ({ status, tasks, onTaskDrop, onColumnDrop, onSelectTask, viewContext, blockedTaskId }) => {
     const [isOver, setIsOver] = React.useState(false);
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -122,7 +123,7 @@ const KanbanColumn: React.FC<{
                     />
                 ))}
                 <button
-                    onClick={() => onSelectTask({ id: '', title: '', description: '', status, tags: [], team: 'Unassigned' } as any)}
+                    onClick={() => onSelectTask({ id: '', title: '', description: '', status, tags: [], team: viewContext === 'Manager' ? 'Unassigned' : viewContext } as any)}
                     className="w-full h-12 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[#30363D] text-[#8B949E] text-sm font-medium hover:text-[#58A6FF] hover:border-[#58A6FF] hover:bg-[#21262D] transition-all"
                 >
                     <Plus size={16} />
@@ -289,6 +290,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, columns, onTaskDrop, o
                             onTaskDrop={onTaskDrop}
                             onColumnDrop={onColumnDrop}
                             onSelectTask={onSelectTask}
+                            viewContext={viewContext}
                             blockedTaskId={blockedTaskId}
                         />
                     ))}

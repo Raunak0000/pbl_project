@@ -37,9 +37,9 @@ SyncSpace is a full-featured collaborative task management application designed 
 
 - 🔄 **Real-time Collaboration** - See changes instantly as team members work
 - 🎨 **Multiple Views** - Switch between Kanban boards, Calendar, and Chat
-- ✍️ **Rich Text Editing** - Full-featured editor powered by Tiptap/ProseMirror
-- 🌓 **Dark Mode** - Beautiful light and dark themes
-- 👥 **Role-Based Access** - Admin and user roles with appropriate permissions
+- 🌓 **GitHub-Dark Navy Theme** - A beautiful, deep navy theme with green action accents inspired by GitHub
+- ☕ **Spring Boot Backend** - Powered by Java Spring Boot and MongoDB for persistence
+- 👥 **Role-Based Access** - Admin and user roles with secure, ownership-based board access
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile devices
 
 ---
@@ -96,10 +96,9 @@ SyncSpace is a full-featured collaborative task management application designed 
 ### 🎨 User Experience
 
 - **Theme System**
-  - Light/Dark mode toggle
-  - Persists preference in localStorage
-  - Respects system preferences
-  - Smooth theme transitions
+  - Stunning GitHub-Dark Navy aesthetics
+  - Deep navy backgrounds (`#0D1117`) with subtle borders and sleek green accents
+  - Seamless, modern, and high-contrast user interface
 
 - **Responsive Design**
   - Mobile-first approach
@@ -280,13 +279,11 @@ User Action → Component → Context → Service → Storage
 
 ### Storage Strategy
 
-Currently uses **localStorage** for:
-- User accounts and authentication
-- Task data and boards
-- Theme preferences
-- Live editing state
+The application leverages a real backend for persistence:
+- **Spring Boot API** handling business logic.
+- **MongoDB** storing Users, Tasks, Boards, and Roles securely.
 
-> **Note**: This is a mock backend. Data persists only in your browser and is not shared across devices. A real backend implementation would use a database and WebSocket server.
+> **Note**: While the database permanently stores the data, the "Live Editing" module currently uses a cross-tab simulation. Upgrading this to real WebSockets via Spring Boot is supported and straightforward.
 
 ### Live Editing Implementation
 
@@ -333,16 +330,14 @@ VITE_WS_URL=ws://localhost:3001
 
 ## 🗺 Roadmap
 
-### Current Status: Frontend Complete ✅
+### Current Status: Full Stack Integration ✅
+
+### Backend Stack
+- **Node/Express to Spring Boot** - The application was successfully migrated from a mock backend to a real Java Spring Boot application.
+- **Database** - Integrated with MongoDB for robust data storage.
+- **Security** - Custom JWT and ownership-based endpoints (users only see/modify their own boards).
 
 ### Planned Features
-
-- [ ] **Backend Implementation**
-  - [ ] Node.js/Express server
-  - [ ] PostgreSQL/MongoDB database
-  - [ ] Real WebSocket server with Socket.io
-  - [ ] JWT authentication
-  - [ ] RESTful API endpoints
 
 - [ ] **Enhanced Features**
   - [ ] File attachments on tasks

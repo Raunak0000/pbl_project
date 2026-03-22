@@ -80,7 +80,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
         assignee: '',
         dueDate: '',
         tags: [],
-        team: 'Unassigned',
+        team: task?.team || 'Unassigned',
         priority: 'medium',
       });
       notifyEditing('', null);
