@@ -209,7 +209,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {isSidebarOpen && <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/60 z-20 md:hidden" />}
 
             {/* Sidebar */}
-            <aside className={`flex-shrink-0 bg-cloud-strong dark:bg-brand-surface border-r border-slate-200 dark:border-brand-border flex flex-col fixed inset-y-0 left-0 z-30 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'w-16' : 'w-72'}`}>
+            <aside className={`flex-shrink-0 bg-gray-50 dark:bg-brand-surface border-r border-slate-200 dark:border-brand-border flex flex-col fixed inset-y-0 left-0 z-30 transform md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isSidebarCollapsed ? 'w-16' : 'w-72'}`}>
                 <div className="p-4 flex-shrink-0 flex items-center justify-between h-16 border-b border-slate-200 dark:border-brand-border">
                     {!isSidebarCollapsed && (
                         <div onClick={onGoToLanding} className="cursor-pointer flex items-center gap-2 group">
@@ -240,7 +240,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                 </div>
 
-                <nav className="flex-grow p-2 space-y-1 overflow-y-auto">
+                <nav className="flex-grow py-4 px-3 space-y-2 overflow-y-auto">
                     <button
                         onClick={handleSelectDashboardHome}
                         className={`w-full flex items-center gap-2 p-2 rounded-md transition-all ${!activeTask
@@ -267,7 +267,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <div key={board.id}>
                             <button
                                 onClick={() => toggleBoardInSidebar(board.id)}
-                                className={`w-full flex items-center justify-between p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors group ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                                className={`w-full flex items-center justify-between p-2 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white transition-colors group ${isSidebarCollapsed ? 'justify-center' : ''} ${activeBoard?.id === board.id ? 'border-l-2 border-l-blue-500 bg-white shadow-sm' : 'border-l-2 border-l-transparent'}`}
                                 title={board.name}
                             >
                                 <div className="flex items-center gap-2 overflow-hidden">

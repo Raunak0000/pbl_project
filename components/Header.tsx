@@ -158,7 +158,7 @@ const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={onNewTask}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-brand-dark rounded-lg hover:opacity-90 transition-opacity font-bold text-sm shadow-lg hover:shadow-xl"
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-bold text-sm shadow-md hover:shadow-lg"
         >
           <Plus size={16} />
           <span className="hidden sm:inline">New Task</span>

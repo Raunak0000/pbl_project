@@ -16,6 +16,7 @@ export interface Task {
     tags?: string[];
     team?: string;
     blockedBy?: string[]; // Array of task IDs that block this task from being completed
+    priority?: 'high' | 'medium' | 'low';
 }
 
 export interface Board {

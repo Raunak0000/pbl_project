@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Task, Status } from '../types';
 import TaskCard from './TaskCard';
-import { Columns, Filter, ChevronDown, ListFilter, ArrowUpDown, Tag } from 'lucide-react';
+import { Columns, Filter, ChevronDown, ListFilter, ArrowUpDown, Tag, Plus } from 'lucide-react';
 
 interface KanbanBoardProps {
     tasks: Task[];
@@ -16,17 +16,17 @@ interface KanbanBoardProps {
 }
 
 const statusColors: { [key: string]: string } = {
-    'To Do': 'bg-slate-500',
-    'In Progress': 'bg-accent-primary',
-    'Done': 'bg-status-success',
-    'Blocked': 'bg-status-error'
+    'To Do': 'bg-purple-400',
+    'In Progress': 'bg-blue-400',
+    'Done': 'bg-green-400',
+    'Blocked': 'bg-red-400'
 };
 
 const statusBorderColors: { [key: string]: string } = {
-    'To Do': 'border-slate-500/20',
-    'In Progress': 'border-accent-primary/20',
-    'Done': 'border-status-success/20',
-    'Blocked': 'border-status-error/20'
+    'To Do': 'border-purple-200',
+    'In Progress': 'border-blue-200',
+    'Done': 'border-green-200',
+    'Blocked': 'border-red-200'
 };
 
 type FilterOption = 'all' | 'due_soon' | 'overdue' | 'no_date';
@@ -41,7 +41,6 @@ const KanbanColumn: React.FC<{
     blockedTaskId?: string | null;
 }> = ({ status, tasks, onTaskDrop, onColumnDrop, onSelectTask, blockedTaskId }) => {
     const [isOver, setIsOver] = React.useState(false);
-    const showSkeletons = tasks.length === 0;
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -95,8 +94,8 @@ const KanbanColumn: React.FC<{
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             className={`
-        flex-1 min-w-[320px] max-w-[360px] flex flex-col rounded-xl transition-all duration-300
-        ${isOver ? 'bg-slate-50 dark:bg-white/5 ring-1 ring-accent-primary/20' : 'bg-transparent'}
+        flex-1 min-w-[320px] max-w-[360px] flex flex-col bg-gray-50 rounded-xl p-3 border border-gray-200 transition-all duration-300
+        ${isOver ? 'ring-2 ring-blue-300 ring-offset-1' : ''}
       `}
         >
             {/* Column Header */}
@@ -108,10 +107,10 @@ const KanbanColumn: React.FC<{
                 className="flex items-center justify-between mb-4 px-2 py-2 cursor-grab active:cursor-grabbing hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors group"
             >
                 <div className="flex items-center gap-3">
-                    <span className={`w-2.5 h-2.5 rounded-full ring-2 ring-offset-2 ring-offset-cloud dark:ring-offset-brand-dark ${statusColors[status] || 'bg-slate-500'}`}></span>
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 select-none group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{status}</h2>
+                    <span className={`w-2.5 h-2.5 rounded-full ${statusColors[status] || 'bg-gray-400'}`}></span>
+                    <h2 className="text-sm font-semibold text-gray-700 select-none group-hover:text-gray-900 transition-colors">{status}</h2>
                 </div>
-                <span className="text-xs font-mono font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded-full border border-slate-200 dark:border-white/5">
+                <span className="text-xs font-semibold text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200 shadow-sm">
                     {tasks.length}
                 </span>
             </div>
@@ -129,11 +128,13 @@ const KanbanColumn: React.FC<{
                         isBlocked={blockedTaskId === task.id}
                     />
                 ))}
-                {showSkeletons && (
-                    <div className="h-24 rounded-lg border border-dashed border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-400 dark:text-slate-600 text-xs font-medium uppercase tracking-wider bg-slate-50/50 dark:bg-white/[0.02]">
-                        Empty Slot
-                    </div>
-                )}
+                <button
+                    onClick={() => onSelectTask({ id: '', title: '', description: '', status, tags: [], team: 'Unassigned' } as any)}
+                    className="w-full h-12 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:text-blue-600 hover:border-blue-400 hover:bg-white hover:shadow-sm transition-all"
+                >
+                    <Plus size={16} />
+                    Add task
+                </button>
             </div>
         </div>
     );
