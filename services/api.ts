@@ -12,7 +12,7 @@ const axiosInstance = axios.create({
 
 // Attach JWT token to every request
 axiosInstance.interceptors.request.use((config) => {
-    const token = localStorage.getItem('syncSpaceToken');
+    const token = sessionStorage.getItem('syncSpaceToken');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -41,7 +41,6 @@ export const api = {
     },
 
     createBoard: async (board: Omit<Board, 'id'> | Board): Promise<Board> => {
-        // Backend creates ID and timestamps
         const response = await axiosInstance.post('/board', board);
         return response.data;
     },

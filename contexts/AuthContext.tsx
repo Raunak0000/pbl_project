@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthResponse } from '../types';
 
@@ -18,9 +17,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [token, setToken] = useState<string | null>(null);
 
     useEffect(() => {
-        // Check localStorage for persisting login session
-        const savedUser = localStorage.getItem('syncSpaceCurrentUser');
-        const savedToken = localStorage.getItem('syncSpaceToken');
+        const savedUser = sessionStorage.getItem('syncSpaceCurrentUser');
+        const savedToken = sessionStorage.getItem('syncSpaceToken');
 
         if (savedUser && savedToken) {
             setUser(JSON.parse(savedUser));
@@ -31,23 +29,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const login = (data: AuthResponse) => {
         setUser(data.user);
         setToken(data.token);
-        localStorage.setItem('syncSpaceCurrentUser', JSON.stringify(data.user));
-        localStorage.setItem('syncSpaceToken', data.token);
+        sessionStorage.setItem('syncSpaceCurrentUser', JSON.stringify(data.user));
+        sessionStorage.setItem('syncSpaceToken', data.token);
     };
 
     const logout = () => {
         setUser(null);
         setToken(null);
-        localStorage.removeItem('syncSpaceCurrentUser');
-        localStorage.removeItem('syncSpaceToken');
+        sessionStorage.removeItem('syncSpaceCurrentUser');
+        sessionStorage.removeItem('syncSpaceToken');
     };
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
-            token, 
-            login, 
-            logout, 
+        <AuthContext.Provider value={{
+            user,
+            token,
+            login,
+            logout,
             isAuthenticated: !!user,
             isAdmin: user?.role === 'ADMIN'
         }}>
