@@ -23,13 +23,12 @@ public class BoardController {
 
     @GetMapping
     public ResponseEntity<List<Board>> getAllBoards(@AuthenticationPrincipal User user) {
-        // Only return boards belonging to the authenticated user
-        return ResponseEntity.ok(boardRepo.findByUserId(user.getId()));
+        return ResponseEntity.ok(boardRepo.findAll()); // all users see all boards
     }
 
     @PostMapping
     public ResponseEntity<Board> createBoard(@AuthenticationPrincipal User user,
-                                             @RequestBody Board board) {
+            @RequestBody Board board) {
         // Set the owner to the authenticated user
         board.setUserId(user.getId());
         return ResponseEntity.ok(boardRepo.save(board));
@@ -37,7 +36,7 @@ public class BoardController {
 
     @DeleteMapping("/{boardId}")
     public ResponseEntity<?> deleteBoard(@AuthenticationPrincipal User user,
-                                         @PathVariable String boardId) {
+            @PathVariable String boardId) {
         // Verify the board belongs to the authenticated user before deleting
         Board board = boardRepo.findByIdAndUserId(boardId, user.getId())
                 .orElse(null);
