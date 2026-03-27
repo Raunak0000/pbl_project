@@ -157,8 +157,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
   const dueDateState = getDueDateState(formData.dueDate);
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-      <div className="bg-[#161B22] rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col md:flex-row overflow-hidden border border-[#30363D]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-center items-center">
+      <div className="bg-[#161B22] shadow-2xl w-full h-full flex flex-col md:flex-row overflow-hidden">
         
         {/* Left Sidebar (Metadata) */}
         <aside className="w-full md:w-[260px] flex-shrink-0 bg-[#0D1117] border-r border-[#21262D] flex flex-col overflow-y-auto">
