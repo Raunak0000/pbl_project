@@ -257,6 +257,7 @@ const App: React.FC = () => {
       handleCloseModal();
     } catch (error) {
       console.error("Failed to save task", error);
+      alert("Failed to save task. Please check the connection and try again.");
     }
   };
 

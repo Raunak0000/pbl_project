@@ -80,7 +80,7 @@ public class TaskController {
             return ResponseEntity.status(403).body(Map.of("message", "Board not found or access denied"));
         }
         try {
-            TaskStatus taskStatus = TaskStatus.valueOf(status.toUpperCase().replace(" ", "_"));
+            TaskStatus taskStatus = TaskStatus.fromLabel(status);
             Task updatedTask = taskService.updateTaskStatus(taskId, taskStatus);
             return ResponseEntity.ok(updatedTask);
         } catch (IllegalArgumentException e) {

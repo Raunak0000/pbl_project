@@ -73,4 +73,4 @@ export const api = {
     deleteTask: async (taskId: string): Promise<void> => {
         await axiosInstance.delete(`/tasks/${taskId}`);
     }
-};
+};  
