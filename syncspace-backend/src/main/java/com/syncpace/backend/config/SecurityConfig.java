@@ -25,6 +25,10 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
+    .authorizeHttpRequests(auth -> auth
+    .requestMatchers("/api/auth/**", "/error").permitAll()
+    .anyRequest().authenticated()
+)
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http

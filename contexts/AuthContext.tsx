@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthResponse } from '../types';
+import { authApi } from '../services/api';
 
 interface AuthContextType {
     user: User | null;
     token: string | null;
     login: (data: AuthResponse) => void;
-    logout: () => void;
+    logout: () => Promise<void>;
     isAuthenticated: boolean;
     isAdmin: boolean;
 }
@@ -33,7 +34,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sessionStorage.setItem('syncSpaceToken', data.token);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await authApi.logout();
+        } catch (e) {
+            // still clear local session even if API call fails
+        }
         setUser(null);
         setToken(null);
         sessionStorage.removeItem('syncSpaceCurrentUser');

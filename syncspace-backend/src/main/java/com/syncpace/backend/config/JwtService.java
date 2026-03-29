@@ -1,6 +1,9 @@
 package com.syncpace.backend.config;
 
+import com.syncpace.backend.model.InvalidatedToken;
 import com.syncpace.backend.model.User;
+import com.syncpace.backend.repository.InvalidatedTokenRepo;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -12,6 +15,26 @@ import java.util.Date;
 
 @Service
 public class JwtService {
+
+    private final InvalidatedTokenRepo invalidatedTokenRepo;
+
+    public JwtService(InvalidatedTokenRepo invalidatedTokenRepo) {
+        this.invalidatedTokenRepo = invalidatedTokenRepo;
+    }
+
+    public void invalidateToken(String token) {
+        Date expiry = extractAllClaims(token).getExpiration();
+        invalidatedTokenRepo.save(new InvalidatedToken(token, expiry));
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            extractAllClaims(token);
+            return !invalidatedTokenRepo.existsByToken(token); // check blocklist
+        } catch (Exception e) {
+            return false;
+        }
+    }
 
     @Value("${jwt.secret}")
     private String secret;
@@ -36,15 +59,6 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
-    }
-
-    public boolean isTokenValid(String token) {
-        try {
-            extractAllClaims(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private Claims extractAllClaims(String token) {

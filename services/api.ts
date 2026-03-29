@@ -30,6 +30,10 @@ export const authApi = {
         const response = await axiosInstance.post('/auth/register', { username, email, password });
         return response.data;
     },
+
+    logout: async (): Promise<void> => {
+        await axiosInstance.post('/auth/logout');
+    },
 };
 
 // --- Board & Task API ---
