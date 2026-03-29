@@ -3,12 +3,19 @@ package com.syncpace.backend.controller;
 import com.syncpace.backend.config.JwtService;
 import com.syncpace.backend.dto.LoginRequest;
 import com.syncpace.backend.dto.RegisterRequest;
+import com.syncpace.backend.model.AppCounter;
 import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.UserRepo;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,27 +31,31 @@ public class AuthController {
     private final UserRepo userRepo;
     private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final MongoTemplate mongoTemplate;
+
     private final ConcurrentHashMap<String, long[]> loginAttempts = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
-    private static final long WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+    private static final long WINDOW_MS = 15 * 60 * 1000;
+
+    public AuthController(UserRepo userRepo, JwtService jwtService,
+            BCryptPasswordEncoder passwordEncoder, MongoTemplate mongoTemplate) {
+        this.userRepo = userRepo;
+        this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
+        this.mongoTemplate = mongoTemplate;
+    }
 
     private boolean isRateLimited(String ip) {
         long now = Instant.now().toEpochMilli();
         loginAttempts.compute(ip, (key, val) -> {
             if (val == null || now - val[1] > WINDOW_MS) {
-                return new long[] { 1, now }; // [count, windowStart]
+                return new long[] { 1, now };
             }
             val[0]++;
             return val;
         });
         long[] attempts = loginAttempts.get(ip);
         return attempts[0] > MAX_ATTEMPTS;
-    }
-
-    public AuthController(UserRepo userRepo, JwtService jwtService, BCryptPasswordEncoder passwordEncoder) {
-        this.userRepo = userRepo;
-        this.jwtService = jwtService;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/register")
@@ -65,12 +76,15 @@ public class AuthController {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
 
-        // First user becomes ADMIN, subsequent users are USER
-        if (userRepo.count() == 0) {
-            user.setRole(User.Role.ADMIN);
-        } else {
-            user.setRole(User.Role.USER);
-        }
+        // Atomic first-user-becomes-admin check
+        AppCounter counter = mongoTemplate.findAndModify(
+                Query.query(Criteria.where("_id").is("userCount")),
+                new Update().inc("userCount", 1).setOnInsert("_id", "userCount"),
+                FindAndModifyOptions.options().returnNew(true).upsert(true),
+                AppCounter.class);
+
+        boolean isFirstUser = counter != null && counter.getUserCount() == 1;
+        user.setRole(isFirstUser ? User.Role.ADMIN : User.Role.USER);
 
         User savedUser = userRepo.save(user);
         String token = jwtService.generateToken(savedUser);
@@ -101,11 +115,22 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials"));
         }
 
-        // Reset on successful login
         loginAttempts.remove(ip);
 
         String token = jwtService.generateToken(user);
         return ResponseEntity.ok(buildAuthResponse(user, token));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(
+            @AuthenticationPrincipal User user,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            jwtService.invalidateToken(token);
+        }
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
     private Map<String, Object> buildAuthResponse(User user, String token) {
@@ -120,17 +145,5 @@ public class AuthController {
         response.put("user", userMap);
 
         return response;
-    }
-
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(
-            @org.springframework.security.core.annotation.AuthenticationPrincipal User user,
-            jakarta.servlet.http.HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            jwtService.invalidateToken(token);
-        }
-        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 }
