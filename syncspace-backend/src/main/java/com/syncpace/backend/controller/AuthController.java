@@ -12,8 +12,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,6 +24,22 @@ public class AuthController {
     private final UserRepo userRepo;
     private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final ConcurrentHashMap<String, long[]> loginAttempts = new ConcurrentHashMap<>();
+    private static final int MAX_ATTEMPTS = 5;
+    private static final long WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+    private boolean isRateLimited(String ip) {
+        long now = Instant.now().toEpochMilli();
+        loginAttempts.compute(ip, (key, val) -> {
+            if (val == null || now - val[1] > WINDOW_MS) {
+                return new long[] { 1, now }; // [count, windowStart]
+            }
+            val[0]++;
+            return val;
+        });
+        long[] attempts = loginAttempts.get(ip);
+        return attempts[0] > MAX_ATTEMPTS;
+    }
 
     public AuthController(UserRepo userRepo, JwtService jwtService, BCryptPasswordEncoder passwordEncoder) {
         this.userRepo = userRepo;
@@ -61,21 +79,30 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+
+        if (isRateLimited(ip)) {
+            return ResponseEntity.status(429).body(Map.of(
+                    "message", "Too many login attempts. Please try again in 15 minutes."));
+        }
+
         String username = request.getUsername();
         String password = request.getPassword();
 
         var userOpt = userRepo.findByUsername(username);
-
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials"));
         }
 
         User user = userOpt.get();
-
         if (!passwordEncoder.matches(password, user.getPassword())) {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials"));
         }
+
+        // Reset on successful login
+        loginAttempts.remove(ip);
 
         String token = jwtService.generateToken(user);
         return ResponseEntity.ok(buildAuthResponse(user, token));
