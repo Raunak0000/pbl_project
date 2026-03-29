@@ -4,10 +4,13 @@ import com.syncpace.backend.model.Task;
 import com.syncpace.backend.model.TaskStatus;
 import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.BoardRepo;
+import com.syncpace.backend.repository.TaskRepo;
 import com.syncpace.backend.service.TaskService;
 
 import java.util.Map;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +21,12 @@ public class TaskController {
 
     private final TaskService taskService;
     private final BoardRepo boardRepo;
+    private final TaskRepo taskRepo;
 
-    public TaskController(TaskService taskService, BoardRepo boardRepo) {
+    public TaskController(TaskService taskService, BoardRepo boardRepo, TaskRepo taskRepo) {
         this.taskService = taskService;
         this.boardRepo = boardRepo;
+        this.taskRepo = taskRepo;
     }
 
     /**
@@ -33,12 +38,16 @@ public class TaskController {
     }
 
     @GetMapping("/board/{boardId}")
-    public ResponseEntity<?> getTasksForBoard(@AuthenticationPrincipal User user,
-            @PathVariable String boardId) {
+    public ResponseEntity<?> getTasksForBoard(
+            @AuthenticationPrincipal User user,
+            @PathVariable String boardId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size) {
         if (!boardExists(boardId)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
-        return ResponseEntity.ok(taskService.getTasksByBoard(boardId));
+        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return ResponseEntity.ok(taskRepo.findByBoardId(boardId, pageable));
     }
 
     @PostMapping
