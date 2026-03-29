@@ -1,0 +1,218 @@
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+/* ─── Class-based dark mode ─── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Theme tokens (migrated from CDN tailwind.config) ─── */
+@theme {
+  /* Brand / GitHub-Dark Navy */
+  --color-brand-dark: #0D1117;
+  --color-brand-surface: #161B22;
+  --color-brand-surface-light: #21262D;
+  --color-brand-border: #30363D;
+
+  /* Cloud (text & muted) */
+  --color-cloud: #E6EDF3;
+  --color-cloud-strong: #8B949E;
+  --color-cloud-border: #30363D;
+
+  /* Accent */
+  --color-accent-primary: #3FB950;
+  --color-accent-secondary: #58A6FF;
+  --color-accent-tertiary: #F85149;
+
+  /* Status */
+  --color-status-success: #3FB950;
+  --color-status-warning: #D29922;
+  --color-status-error: #F85149;
+  --color-status-info: #58A6FF;
+
+  /* Font families */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Background images – grid patterns */
+  --bg-grid-pattern: linear-gradient(to right, #21262D 1px, transparent 1px),
+    linear-gradient(to bottom, #21262D 1px, transparent 1px);
+  --bg-grid-pattern-light: linear-gradient(to right, #21262D 1px, transparent 1px),
+    linear-gradient(to bottom, #21262D 1px, transparent 1px);
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   ProseMirror / Editor Styles (migrated from index.html)
+   ══════════════════════════════════════════════════════════ */
+
+.ProseMirror {
+  outline: none;
+  padding: 0.75rem;
+}
+
+.ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding: 0 1rem;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  line-height: 1.1;
+  font-weight: 600;
+}
+
+.ProseMirror h1 {
+  font-size: 1.75em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.4em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.2em;
+}
+
+.ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror blockquote {
+  padding-left: 1rem;
+  border-left: 3px solid #d1d5db;
+}
+
+.dark .ProseMirror blockquote {
+  border-left: 3px solid #4b5563;
+}
+
+.ProseMirror pre {
+  background: #161B22;
+  color: #e5e7eb;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.dark .ProseMirror pre {
+  background: #0D1117;
+}
+
+.ProseMirror pre code {
+  color: inherit;
+  padding: 0;
+  background: none;
+  font-size: 0.8rem;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #6b7280;
+  pointer-events: none;
+  height: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   Novel Editor – Dark Theme Overrides
+   ══════════════════════════════════════════════════════════ */
+
+/* Editor body */
+.dark .novel-editor .ProseMirror {
+  color: #E6EDF3;
+}
+
+.dark .novel-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: #484F58;
+}
+
+/* Slash command menu */
+.dark [data-novel-slash-command] {
+  background-color: #161B22 !important;
+  border: 1px solid #30363D !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark [data-novel-slash-command] button {
+  color: #E6EDF3 !important;
+}
+
+.dark [data-novel-slash-command] button:hover,
+.dark [data-novel-slash-command] button[data-active="true"] {
+  background-color: #21262D !important;
+}
+
+/* Bubble menu / toolbar */
+.dark [data-novel-bubble-menu] {
+  background-color: #161B22 !important;
+  border: 1px solid #30363D !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark [data-novel-bubble-menu] button {
+  color: #E6EDF3 !important;
+}
+
+.dark [data-novel-bubble-menu] button:hover {
+  background-color: #21262D !important;
+}
+
+.dark [data-novel-bubble-menu] button.is-active {
+  background-color: #21262D !important;
+  color: #58A6FF !important;
+}
+
+/* Node selector dropdown */
+.dark [data-novel-node-selector] {
+  background-color: #161B22 !important;
+  border: 1px solid #30363D !important;
+}
+
+.dark [data-novel-node-selector] button {
+  color: #E6EDF3 !important;
+}
+
+.dark [data-novel-node-selector] button:hover {
+  background-color: #21262D !important;
+}
+
+/* Color selector */
+.dark [data-novel-color-selector] {
+  background-color: #161B22 !important;
+  border: 1px solid #30363D !important;
+}
+
+.dark [data-novel-color-selector] button {
+  color: #E6EDF3 !important;
+}
+
+/* Link selector */
+.dark [data-novel-link-selector] {
+  background-color: #161B22 !important;
+  border: 1px solid #30363D !important;
+}
+
+.dark [data-novel-link-selector] input {
+  background-color: #0D1117 !important;
+  border-color: #30363D !important;
+  color: #E6EDF3 !important;
+}
+
+/* Tippy.js popover containers used by Novel */
+.dark .tippy-box {
+  background-color: #161B22 !important;
+  border: 1px solid #30363D !important;
+}
+
+.dark .tippy-content {
+  color: #E6EDF3 !important;
+}

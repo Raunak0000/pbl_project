@@ -1,62 +1,108 @@
 import React, { useEffect } from 'react';
-import { useEditor, EditorContent, Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import Link from '@tiptap/extension-link';
+import {
+    EditorRoot,
+    EditorContent,
+    EditorCommand,
+    EditorCommandItem,
+    EditorCommandList,
+    EditorCommandEmpty,
+    EditorBubble,
+    EditorBubbleItem,
+    type EditorContentProps,
+    type SuggestionItem,
+    createSuggestionItems,
+    handleCommandNavigation,
+    Command,
+    renderItems,
+    StarterKit,
+    Placeholder,
+    TiptapLink,
+    useEditor,
+} from 'novel';
+import type { JSONContent } from 'novel';
+import { Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, Quote, Code } from 'lucide-react';
 
-interface MenuBarProps {
-  editor: Editor | null;
-}
+// ─── Slash Command Suggestions ───
+const suggestionItems = createSuggestionItems([
+    {
+        title: 'Heading 1',
+        description: 'Large section heading',
+        icon: <Heading1 className="w-4 h-4" />,
+        searchTerms: ['heading', 'h1', 'title'],
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run();
+        },
+    },
+    {
+        title: 'Heading 2',
+        description: 'Medium section heading',
+        icon: <Heading2 className="w-4 h-4" />,
+        searchTerms: ['heading', 'h2', 'subtitle'],
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run();
+        },
+    },
+    {
+        title: 'Bullet List',
+        description: 'Create a bullet list',
+        icon: <List className="w-4 h-4" />,
+        searchTerms: ['unordered', 'list', 'bullet'],
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).toggleBulletList().run();
+        },
+    },
+    {
+        title: 'Numbered List',
+        description: 'Create a numbered list',
+        icon: <ListOrdered className="w-4 h-4" />,
+        searchTerms: ['ordered', 'list', 'number'],
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).toggleOrderedList().run();
+        },
+    },
+    {
+        title: 'Blockquote',
+        description: 'Add a quote block',
+        icon: <Quote className="w-4 h-4" />,
+        searchTerms: ['quote', 'blockquote'],
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).toggleBlockquote().run();
+        },
+    },
+    {
+        title: 'Code Block',
+        description: 'Insert a code block',
+        icon: <Code className="w-4 h-4" />,
+        searchTerms: ['code', 'codeblock'],
+        command: ({ editor, range }) => {
+            editor.chain().focus().deleteRange(range).toggleCodeBlock().run();
+        },
+    },
+]);
 
-const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
-    if (!editor) {
-        return null;
-    }
-
-    const MenuButton: React.FC<{ onClick: () => void; isActive?: boolean; children: React.ReactNode; title: string }> = ({ onClick, isActive, children, title }) => (
+// ─── Bubble Menu Button ───
+const BubbleButton: React.FC<{
+    children: React.ReactNode;
+    onSelect: (editor: any) => void;
+    isActive?: boolean;
+}> = ({ children, onSelect, isActive }) => (
+    <EditorBubbleItem
+        onSelect={onSelect}
+    >
         <button
             type="button"
-            onClick={onClick}
-            title={title}
-            className={`p-2 rounded transition-colors w-9 h-9 flex items-center justify-center ${isActive ? 'bg-slate-300 dark:bg-slate-700' : 'hover:bg-slate-200 dark:hover:bg-[#21262D]'}`}
+            className={`p-2 rounded transition-colors w-8 h-8 flex items-center justify-center text-sm
+                ${isActive
+                    ? 'bg-[#21262D] text-[#58A6FF]'
+                    : 'hover:bg-[#21262D] text-[#E6EDF3]'
+                }`}
         >
             {children}
         </button>
-    );
+    </EditorBubbleItem>
+);
 
-    return (
-        <div className="flex flex-wrap items-center gap-1 p-2 border-b border-slate-300 dark:border-[#30363D]">
-            <MenuButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Bold">
-                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 11h4.5a2.5 2.5 0 1 0 0-5H8v5Zm.5 4.5a2.5 2.5 0 0 0 0-5H8v5h.5Z" /><path d="M6 4h8.5a4.5 4.5 0 1 1 0 9H6V4Zm0 9h6.5a2.5 2.5 0 1 1 0 5H6v-5Z" /></svg>
-            </MenuButton>
-            <MenuButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="Italic">
-                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 5h8v2h-3.5l-4 10H14v2H6v-2h3.5l4-10H10V5Z" /></svg>
-            </MenuButton>
-            <MenuButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Strike">
-                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5 13h14v-2H5v2Zm.5-7.532a3.5 3.5 0 0 1 6.852-.52L13.1 8H18a1 1 0 1 1 0 2h-4.322l-1.385 3.463A3.501 3.501 0 0 1 5.5 18.5a3.5 3.5 0 0 1-1.148-6.685L5.5 5.468ZM8.5 8a1.5 1.5 0 1 0-2.852-.52L4.9 9.815a1.5 1.5 0 1 0 2.296 2.717L8.5 8Zm5.648 6.52a1.5 1.5 0 1 0 2.852.52l.748-2.332a1.5 1.5 0 1 0-2.296-2.717l-1.304 4.529Z" /></svg>
-            </MenuButton>
-            <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-            <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} isActive={editor.isActive('heading', { level: 1 })} title="H1">
-                 <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19h3v-6h4V5H4v14Zm13-14v14h3V5h-3Z" /></svg>
-            </MenuButton>
-            <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="H2">
-                 <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19h3v-6h4V5H4v14Zm14.28-11.85a3.5 3.5 0 0 0-4.654 4.932L16.5 18H13v2h8v-2.167l-3.28-5.467A3.5 3.5 0 0 0 18.28 7.15Z" /></svg>
-            </MenuButton>
-            <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-            <MenuButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Bullet List">
-                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 5h12v2H9V5Zm0 6h12v2H9v-2Zm0 6h12v2H9v-2ZM3.5 3.5a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3Zm0 6a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3Zm0 6a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3Z" /></svg>
-            </MenuButton>
-            <MenuButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Ordered List">
-                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9 5h12v2H9V5Zm0 6h12v2H9v-2Zm0 6h12v2H9v-2ZM4 5h2v3H4V5Zm0 5.5h3V9H5.5V8H7V6H4v2h1.5v1H4v1.5ZM5.5 18H7v-6H4v1.5h1.5v1H4v1.5h1.5v2Z" /></svg>
-            </MenuButton>
-            <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1"></div>
-            <MenuButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Blockquote">
-                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.983 3h-6v10h6V8.333H6.85L9.983 3Zm11 0h-6v10h6V8.333h-3.133L20.983 3Z" /></svg>
-            </MenuButton>
-        </div>
-    );
-};
-
+// ─── Props Interface (same as original) ───
 interface TiptapEditorProps {
     content: string;
     onChange: (html: string) => void;
@@ -65,39 +111,104 @@ interface TiptapEditorProps {
 }
 
 const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange, placeholder, className }) => {
-    const editor = useEditor({
-        extensions: [
-            StarterKit.configure({
-                heading: { levels: [1, 2] },
-                blockquote: { HTMLAttributes: { class: 'pl-4 border-l-4 border-slate-300 dark:border-slate-600' } }
-            }),
-            Placeholder.configure({
-                placeholder: placeholder || 'Write something amazing...',
-            }),
-            Link.configure({ openOnClick: false, autolink: true }),
-        ],
-        content: content,
-        onUpdate: ({ editor }) => {
-            let html = editor.getHTML();
-            if (html === '<p></p>') {
-                html = '';
-            }
-            onChange(html);
-        },
-    });
-
-    useEffect(() => {
-        if (editor && !editor.isDestroyed && editor.getHTML() !== content) {
-            editor.commands.setContent(content, false);
-        }
-    }, [content, editor]);
-
     return (
-        <div className={`bg-white dark:bg-[#21262D] border border-slate-300 dark:border-[#30363D] rounded-md overflow-hidden flex flex-col ${className}`}>
-            <MenuBar editor={editor} />
-            <div className="flex-grow overflow-y-auto">
-                <EditorContent editor={editor} />
-            </div>
+        <div className={`novel-editor bg-[#0D1117] border border-[#30363D] rounded-md overflow-hidden flex flex-col ${className || ''}`}>
+            <EditorRoot>
+                <EditorContent
+                    initialContent={content ? { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }] } : undefined}
+                    extensions={[
+                        StarterKit.configure({
+                            heading: { levels: [1, 2, 3] },
+                            blockquote: {
+                                HTMLAttributes: {
+                                    class: 'pl-4 border-l-4 border-[#30363D]',
+                                },
+                            },
+                        }),
+                        Placeholder.configure({
+                            placeholder: placeholder || "Type '/' for commands…",
+                        }),
+                        TiptapLink.configure({
+                            openOnClick: false,
+                            autolink: true,
+                        }),
+                        Command.configure({
+                            suggestion: {
+                                items: () => suggestionItems,
+                                render: renderItems,
+                            },
+                        }),
+                    ]}
+                    onCreate={({ editor }) => {
+                        // Set HTML content on creation if provided
+                        if (content && content !== '<p></p>' && content.trim() !== '') {
+                            editor.commands.setContent(content, false);
+                        }
+                    }}
+                    onUpdate={({ editor }) => {
+                        let html = editor.getHTML();
+                        if (html === '<p></p>') {
+                            html = '';
+                        }
+                        onChange(html);
+                    }}
+                    editorProps={{
+                        handleDOMEvents: {
+                            keydown: (_view, event) => handleCommandNavigation(event),
+                        },
+                        attributes: {
+                            class: 'prose prose-invert max-w-none min-h-[150px] text-[#E6EDF3] focus:outline-none',
+                        },
+                    }}
+                    className="relative w-full flex-grow overflow-y-auto"
+                >
+                    {/* Slash Command Menu */}
+                    <EditorCommand className="z-50 h-auto max-h-[330px] overflow-y-auto rounded-md border border-[#30363D] bg-[#161B22] px-1 py-2 shadow-xl transition-all">
+                        <EditorCommandEmpty className="px-2 py-1 text-[#8B949E] text-sm">
+                            No results
+                        </EditorCommandEmpty>
+                        <EditorCommandList>
+                            {suggestionItems.map((item) => (
+                                <EditorCommandItem
+                                    value={item.title}
+                                    onCommand={(val) => item.command?.(val)}
+                                    key={item.title}
+                                    className="flex items-center gap-2 w-full rounded-sm px-2 py-1.5 text-sm text-[#E6EDF3] hover:bg-[#21262D] cursor-pointer aria-selected:bg-[#21262D]"
+                                >
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[#30363D] bg-[#0D1117]">
+                                        {item.icon}
+                                    </div>
+                                    <div>
+                                        <p className="font-medium">{item.title}</p>
+                                        <p className="text-xs text-[#8B949E]">{item.description}</p>
+                                    </div>
+                                </EditorCommandItem>
+                            ))}
+                        </EditorCommandList>
+                    </EditorCommand>
+
+                    {/* Bubble Menu (formatting toolbar) */}
+                    <EditorBubble
+                        tippyOptions={{
+                            placement: 'top',
+                        }}
+                        className="flex items-center gap-0.5 rounded-md border border-[#30363D] bg-[#161B22] p-1 shadow-xl"
+                    >
+                        <BubbleButton onSelect={(editor) => editor.chain().focus().toggleBold().run()}>
+                            <Bold className="w-3.5 h-3.5" />
+                        </BubbleButton>
+                        <BubbleButton onSelect={(editor) => editor.chain().focus().toggleItalic().run()}>
+                            <Italic className="w-3.5 h-3.5" />
+                        </BubbleButton>
+                        <BubbleButton onSelect={(editor) => editor.chain().focus().toggleStrike().run()}>
+                            <Strikethrough className="w-3.5 h-3.5" />
+                        </BubbleButton>
+                        <BubbleButton onSelect={(editor) => editor.chain().focus().toggleCode().run()}>
+                            <Code className="w-3.5 h-3.5" />
+                        </BubbleButton>
+                    </EditorBubble>
+                </EditorContent>
+            </EditorRoot>
         </div>
     );
 };
