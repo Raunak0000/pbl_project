@@ -1,6 +1,6 @@
 package com.syncpace.backend.config;
 
-import java.nio.file.AccessDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
