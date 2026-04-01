@@ -1,8 +1,8 @@
-import { io, Socket } from 'socket.io-client';
+import { Client, IMessage } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 import { Task, Board } from '../types';
 
-// Live editing events
-export type LiveEditingEvent = 
+export type LiveEditingEvent =
   | { type: 'TASK_UPDATE'; payload: { boardId: string; taskId: string; updates: Partial<Task>; userId: string } }
   | { type: 'TASK_CREATE'; payload: { boardId: string; task: Task; userId: string } }
   | { type: 'TASK_DELETE'; payload: { boardId: string; taskId: string; userId: string } }
@@ -19,77 +19,55 @@ export interface ActiveEditor {
 }
 
 class LiveEditingService {
-  private socket: Socket | null = null;
+  private client: Client | null = null;
   private eventHandlers: Map<string, Set<(event: LiveEditingEvent) => void>> = new Map();
-  private activeEditors: Map<string, ActiveEditor> = new Map(); // userId -> ActiveEditor
+  private activeEditors: Map<string, ActiveEditor> = new Map();
   private currentUserId: string = '';
   private currentUserName: string = '';
-  private isSimulated: boolean = true; // Set to true for local simulation
+  private isConnected: boolean = false;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
-    if (this.isSimulated) {
-      // Simulated mode: broadcast events locally via custom event system
-      this.setupSimulatedMode();
-    } else {
-      // Real WebSocket mode (commented out for now)
-      // this.connect();
-    }
-  }
-
-  private setupSimulatedMode() {
-    // Handle storage events from other tabs
-    const storageHandler = (e: StorageEvent) => {
-      if (e.key === 'liveEditingEvent' && e.newValue) {
-        try {
-          const event = JSON.parse(e.newValue);
-          this.handleIncomingEvent(event);
-        } catch (error) {
-          console.error('Failed to parse live editing event:', error);
-        }
-      }
-    };
-    
-    window.addEventListener('storage', storageHandler);
-
-    // Handle custom events from same tab
-    const customEventHandler = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail) {
-        this.handleIncomingEvent(customEvent.detail);
-      }
-    };
-    
-    window.addEventListener('live-editing-event', customEventHandler);
-
-    // Cleanup old editors every 5 seconds
-    const cleanupInterval = setInterval(() => {
-      const now = Date.now();
-      const toDelete: string[] = [];
-      Array.from(this.activeEditors.entries()).forEach(([userId, editor]) => {
-        if (now - editor.timestamp > 10000) { // 10 seconds timeout
-          toDelete.push(userId);
-        }
-      });
-      
-      toDelete.forEach(userId => {
-        this.activeEditors.delete(userId);
-        this.broadcastEvent({ 
-          type: 'USER_LEFT', 
-          payload: { userId } 
-        });
-      });
-    }, 5000);
-
-    // Store cleanup function for later
-    (this as any)._cleanupInterval = cleanupInterval;
-    (this as any)._storageHandler = storageHandler;
-    (this as any)._customEventHandler = customEventHandler;
+    this.connect();
+    this.startCleanup();
   }
 
   private connect() {
-    // For future WebSocket implementation
-    // this.socket = io('http://localhost:3001');
-    // this.socket.on('live-editing-event', this.handleIncomingEvent.bind(this));
+    this.client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      reconnectDelay: 5000,
+      onConnect: () => {
+        this.isConnected = true;
+        this.client!.subscribe('/topic/live-editing', (message: IMessage) => {
+          try {
+            const event: LiveEditingEvent = JSON.parse(message.body);
+            this.handleIncomingEvent(event);
+          } catch (e) {
+            console.error('Failed to parse WebSocket event:', e);
+          }
+        });
+      },
+      onDisconnect: () => {
+        this.isConnected = false;
+      },
+      onStompError: (frame) => {
+        console.error('STOMP error:', frame);
+      },
+    });
+
+    this.client.activate();
+  }
+
+  private startCleanup() {
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      Array.from(this.activeEditors.entries()).forEach(([userId, editor]) => {
+        if (now - editor.timestamp > 10000) {
+          this.activeEditors.delete(userId);
+          this.notifyHandlers({ type: 'USER_LEFT', payload: { userId } });
+        }
+      });
+    }, 5000);
   }
 
   public setUser(userId: string, userName: string) {
@@ -97,38 +75,72 @@ class LiveEditingService {
     this.currentUserName = userName;
   }
 
+  private broadcastEvent(event: LiveEditingEvent) {
+    // Always update local state immediately
+    this.handleIncomingEvent(event);
+
+    // Send to server if connected (server will broadcast to all OTHER clients)
+    if (this.isConnected && this.client?.connected) {
+      this.client.publish({
+        destination: '/app/live-editing',
+        body: JSON.stringify(event),
+      });
+    }
+  }
+
+  private handleIncomingEvent(event: LiveEditingEvent) {
+    if (event.type === 'USER_EDITING') {
+      this.activeEditors.set(event.payload.userId, {
+        userId: event.payload.userId,
+        userName: event.payload.userName,
+        taskId: event.payload.taskId,
+        timestamp: Date.now(),
+      });
+    } else if (event.type === 'USER_LEFT') {
+      this.activeEditors.delete(event.payload.userId);
+    }
+
+    this.notifyHandlers(event);
+  }
+
+  private notifyHandlers(event: LiveEditingEvent) {
+    this.eventHandlers.forEach(handlers => {
+      handlers.forEach(handler => handler(event));
+    });
+  }
+
   public broadcastTaskUpdate(boardId: string, taskId: string, updates: Partial<Task>) {
     this.broadcastEvent({
       type: 'TASK_UPDATE',
-      payload: { boardId, taskId, updates, userId: this.currentUserId }
+      payload: { boardId, taskId, updates, userId: this.currentUserId },
     });
   }
 
   public broadcastTaskCreate(boardId: string, task: Task) {
     this.broadcastEvent({
       type: 'TASK_CREATE',
-      payload: { boardId, task, userId: this.currentUserId }
+      payload: { boardId, task, userId: this.currentUserId },
     });
   }
 
   public broadcastTaskDelete(boardId: string, taskId: string) {
     this.broadcastEvent({
       type: 'TASK_DELETE',
-      payload: { boardId, taskId, userId: this.currentUserId }
+      payload: { boardId, taskId, userId: this.currentUserId },
     });
   }
 
   public broadcastBoardUpdate(boardId: string, updates: Partial<Board>) {
     this.broadcastEvent({
       type: 'BOARD_UPDATE',
-      payload: { boardId, updates, userId: this.currentUserId }
+      payload: { boardId, updates, userId: this.currentUserId },
     });
   }
 
   public broadcastBoardDelete(boardId: string) {
     this.broadcastEvent({
       type: 'BOARD_DELETE',
-      payload: { boardId, userId: this.currentUserId }
+      payload: { boardId, userId: this.currentUserId },
     });
   }
 
@@ -137,18 +149,18 @@ class LiveEditingService {
       userId: this.currentUserId,
       userName: this.currentUserName,
       taskId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     this.activeEditors.set(this.currentUserId, editor);
-    
+
     this.broadcastEvent({
       type: 'USER_EDITING',
-      payload: { 
-        boardId, 
-        taskId, 
-        userId: this.currentUserId, 
-        userName: this.currentUserName 
-      }
+      payload: {
+        boardId,
+        taskId,
+        userId: this.currentUserId,
+        userName: this.currentUserName,
+      },
     });
   }
 
@@ -161,66 +173,12 @@ class LiveEditingService {
     return this.getActiveEditors().filter(editor => editor.taskId === taskId);
   }
 
-  private broadcastEvent(event: LiveEditingEvent) {
-    if (this.isSimulated) {
-      // Dispatch to current tab immediately via custom event
-      window.dispatchEvent(new CustomEvent('live-editing-event', { detail: event }));
-      
-      // Use localStorage to broadcast to other tabs
-      // Store with timestamp to ensure update detection
-      const timestamp = Date.now();
-      localStorage.setItem('liveEditingEvent', JSON.stringify({ ...event, _timestamp: timestamp }));
-      
-      // Clear after a short delay to allow other tabs to read it
-      setTimeout(() => {
-        localStorage.removeItem('liveEditingEvent');
-      }, 100);
-    } else if (this.socket) {
-      this.socket.emit('live-editing-event', event);
-      // Also dispatch locally for current tab
-      window.dispatchEvent(new CustomEvent('live-editing-event', { detail: event }));
-    }
-  }
-
-  private handleIncomingEvent(event: LiveEditingEvent) {
-    const isOwnEvent = 'userId' in event.payload && event.payload.userId === this.currentUserId;
-    
-    // Update active editors for all USER_EDITING and USER_LEFT events
-    if (event.type === 'USER_EDITING') {
-      this.activeEditors.set(event.payload.userId, {
-        userId: event.payload.userId,
-        userName: event.payload.userName,
-        taskId: event.payload.taskId,
-        timestamp: Date.now()
-      });
-    } else if (event.type === 'USER_LEFT') {
-      this.activeEditors.delete(event.payload.userId);
-    }
-
-    // Always notify handlers, even for our own events
-    // (They may come from other tabs and we need to keep state in sync)
-    this.eventHandlers.forEach(handlers => {
-      handlers.forEach(handler => handler(event));
-    });
-  }
-
   public subscribe(id: string, handler: (event: LiveEditingEvent) => void) {
     if (!this.eventHandlers.has(id)) {
       this.eventHandlers.set(id, new Set());
     }
     this.eventHandlers.get(id)!.add(handler);
 
-    // Explicitly listen to custom events for current tab
-    const customEventHandler = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail) {
-        handler(customEvent.detail);
-      }
-    };
-    
-    window.addEventListener('live-editing-event', customEventHandler);
-
-    // Return unsubscribe function
     return () => {
       const handlers = this.eventHandlers.get(id);
       if (handlers) {
@@ -229,7 +187,6 @@ class LiveEditingService {
           this.eventHandlers.delete(id);
         }
       }
-      window.removeEventListener('live-editing-event', customEventHandler);
     };
   }
 
@@ -238,9 +195,8 @@ class LiveEditingService {
   }
 
   public disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-    }
+    if (this.cleanupInterval) clearInterval(this.cleanupInterval);
+    if (this.client) this.client.deactivate();
     this.eventHandlers.clear();
     this.activeEditors.clear();
   }
