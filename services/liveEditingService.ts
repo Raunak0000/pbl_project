@@ -1,5 +1,5 @@
 import { Client, IMessage } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+import SockJS from 'sockjs-client/dist/sockjs';
 import { Task, Board } from '../types';
 
 export type LiveEditingEvent =
