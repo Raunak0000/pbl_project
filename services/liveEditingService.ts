@@ -6,6 +6,7 @@ export type LiveEditingEvent =
   | { type: 'TASK_UPDATE'; payload: { boardId: string; taskId: string; updates: Partial<Task>; userId: string } }
   | { type: 'TASK_CREATE'; payload: { boardId: string; task: Task; userId: string } }
   | { type: 'TASK_DELETE'; payload: { boardId: string; taskId: string; userId: string } }
+  | { type: 'BOARD_CREATE'; payload: { board: Board; userId: string } }
   | { type: 'BOARD_UPDATE'; payload: { boardId: string; updates: Partial<Board>; userId: string } }
   | { type: 'BOARD_DELETE'; payload: { boardId: string; userId: string } }
   | { type: 'USER_EDITING'; payload: { boardId: string; taskId: string | null; userId: string; userName: string } }
@@ -127,6 +128,13 @@ class LiveEditingService {
     this.broadcastEvent({
       type: 'TASK_DELETE',
       payload: { boardId, taskId, userId: this.currentUserId },
+    });
+  }
+
+  public broadcastBoardCreate(board: Board) {
+    this.broadcastEvent({
+      type: 'BOARD_CREATE',
+      payload: { board, userId: this.currentUserId },
     });
   }
 

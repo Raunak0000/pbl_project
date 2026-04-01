@@ -122,6 +122,12 @@ const App: React.FC = () => {
           if (board.id !== boardId) return board;
           return { ...board, tasks: board.tasks.filter(t => t.id !== taskId) };
         }));
+      } else if (event.type === 'BOARD_CREATE') {
+        const { board } = event.payload;
+        setBoards(prevBoards => {
+          if (prevBoards.find(b => b.id === board.id)) return prevBoards; // Already exists
+          return [...prevBoards, { ...board, tasks: board.tasks || [], columns: board.columns || [...STATUSES] }];
+        });
       } else if (event.type === 'BOARD_DELETE') {
         const { boardId } = event.payload;
         setBoards(prevBoards => prevBoards.filter(b => b.id !== boardId));
@@ -184,7 +190,11 @@ const App: React.FC = () => {
         tasks: [],
         columns: [...STATUSES],
       });
-      setBoards(prev => [...prev, { ...createdBoard, tasks: [], columns: createdBoard.columns || [...STATUSES] }]);
+      const newBoard = { ...createdBoard, tasks: [], columns: createdBoard.columns || [...STATUSES] };
+      setBoards(prev => [...prev, newBoard]);
+
+      // Broadcast creation so other users see it in real-time
+      liveEditingService.broadcastBoardCreate(newBoard);
     } catch {
       console.error("Failed to add board");
     }
