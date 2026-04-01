@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Board, Task, AuthResponse } from '../types';
+import { Board, Task, AuthResponse, User } from '../types';
 
 const BASE_URL = 'http://localhost:8080/api';
 
@@ -77,4 +77,15 @@ export const api = {
     deleteTask: async (taskId: string): Promise<void> => {
         await axiosInstance.delete(`/tasks/${taskId}`);
     }
-};  
+};
+
+export const adminApi = {
+    getUsers: async (): Promise<User[]> => {
+        const response = await axiosInstance.get('/admin/users');
+        return response.data;
+    },
+
+    deleteUser: async (userId: string): Promise<void> => {
+        await axiosInstance.delete(`/admin/users/${userId}`);
+    },
+};
