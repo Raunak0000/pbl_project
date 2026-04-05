@@ -1,0 +1,13 @@
+package com.syncpace.backend.model;
+
+public enum ActivityAction {
+    TASK_CREATED,
+    TASK_DELETED,
+    STATUS_CHANGED,
+    ASSIGNEE_CHANGED,
+    DUE_DATE_CHANGED,
+    TITLE_CHANGED,
+    DESCRIPTION_CHANGED,
+    TAGS_CHANGED,
+    BLOCKED_BY_CHANGED
+}

@@ -1,0 +1,32 @@
+# ─── Stage 1: Build ───────────────────────────────────────────────
+FROM eclipse-temurin:21-jdk AS builder
+
+WORKDIR /app
+
+# Copy Maven wrapper first — Docker caches this layer
+# so it won't re-download Maven on every build
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+
+# Make mvnw executable inside Linux container
+RUN chmod +x mvnw
+
+# Download all dependencies — only re-runs if pom.xml changes
+RUN ./mvnw dependency:go-offline -B
+
+# Copy source and build the JAR
+COPY src ./src
+RUN ./mvnw package -DskipTests -B
+
+# ─── Stage 2: Run ─────────────────────────────────────────────────
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+# Copy only the built JAR — no JDK, no Maven, no source code
+COPY --from=builder /app/target/*.jar app.jar
+
+EXPOSE 8081
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
