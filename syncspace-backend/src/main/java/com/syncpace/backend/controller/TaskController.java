@@ -14,7 +14,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import com.syncpace.backend.model.ActivityLog;
 import com.syncpace.backend.repository.ActivityLogRepo;
 
 @RestController
@@ -39,8 +38,8 @@ public class TaskController {
      * Verifies that the given board belongs to the authenticated user.
      * Returns true if the board exists and is owned by the user, false otherwise.
      */
-    private boolean boardExists(String boardId) {
-        return boardRepo.existsById(boardId);
+    private boolean boardExists(String boardId, User user) {
+        return boardRepo.findByIdAndUserId(boardId, user.getId()).isPresent();
     }
 
     @GetMapping("/board/{boardId}")
@@ -49,7 +48,7 @@ public class TaskController {
             @PathVariable String boardId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        if (!boardExists(boardId)) {
+        if (!boardExists(boardId, user)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
         var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
@@ -59,7 +58,7 @@ public class TaskController {
     @PostMapping
     public ResponseEntity<?> createTask(@AuthenticationPrincipal User user,
             @RequestBody Task task) {
-        if (!boardExists(task.getBoardId())) {
+        if (!boardExists(task.getBoardId(), user)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
         return ResponseEntity.ok(taskService.createTask(task, user));
@@ -79,7 +78,7 @@ public class TaskController {
             }
             boardId = existingTask.getBoardId();
         }
-        if (!boardExists(boardId)) {
+        if (!boardExists(boardId, user)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
         return ResponseEntity.ok(taskService.updateTask(taskId, task, user));
@@ -91,7 +90,7 @@ public class TaskController {
         Task existingTask = taskService.getTaskById(taskId);
         if (existingTask == null)
             return ResponseEntity.notFound().build();
-        if (!boardExists(existingTask.getBoardId())) {
+        if (!boardExists(existingTask.getBoardId(), user)) {
             return ResponseEntity.status(403).body(Map.of("message", "Board not found or access denied"));
         }
         try {
@@ -113,7 +112,7 @@ public class TaskController {
         if (existingTask == null) {
             return ResponseEntity.notFound().build();
         }
-        if (!boardExists(existingTask.getBoardId())) {
+        if (!boardExists(existingTask.getBoardId(), user)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
         taskService.deleteTask(taskId, user);
@@ -133,7 +132,7 @@ public class TaskController {
         }
 
         // Reuse the same ownership pattern already used in this controller
-        if (!boardExists(task.getBoardId())) {
+        if (!boardExists(task.getBoardId(), currentUser)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
 
