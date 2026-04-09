@@ -1,10 +1,8 @@
 import axios from 'axios';
 import { Board, Task, AuthResponse, User, ActivityLog } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
-
 const axiosInstance = axios.create({
-    baseURL: BASE_URL,
+    baseURL: import.meta.env.VITE_API_URL,
     headers: {
         'Content-Type': 'application/json',
     },

@@ -35,7 +35,6 @@ class LiveEditingService {
 
   private connect() {
     this.client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
       reconnectDelay: 5000,
       onConnect: () => {
         this.isConnected = true;
