@@ -14,4 +14,4 @@ COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java","-jar","-Dspring.data.mongodb.uri=${SPRING_DATA_MONGODB_URI}","app.jar"]
+ENTRYPOINT ["java","-Dspring.data.mongodb.uri=${SPRING_DATA_MONGODB_URI}","-jar","app.jar"]
