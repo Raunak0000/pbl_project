@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class BackendApplication {
 
 	public static void main(String[] args) {
-		System.out.println("Mongo URI = " + System.getenv("SPRING_DATA_MONGODB_URI"));
+		System.out.println(">>> MONGO ENV = " + System.getenv("SPRING_DATA_MONGODB_URI"));
 		SpringApplication.run(BackendApplication.class, args);
 
 	}
