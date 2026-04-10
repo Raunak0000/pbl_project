@@ -3,11 +3,14 @@ package com.syncpace.backend.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "app_counters    ")
+@Document(collection = "app_counters")
 public class AppCounter {
     @Id
     private String id;
     private long userCount;
+
+    public AppCounter() {
+    }
 
     public AppCounter(String id) {
         this.id = id;
