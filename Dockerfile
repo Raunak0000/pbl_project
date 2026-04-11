@@ -12,6 +12,6 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 10000
 
-ENTRYPOINT sh -c 'java -Dspring.data.mongodb.uri=$SPRING_DATA_MONGODB_URI -jar app.jar'
+CMD ["sh", "-c", "java -jar app.jar --server.port=${PORT:-10000}"]
