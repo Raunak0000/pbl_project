@@ -30,8 +30,4 @@ COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "java -jar app.jar \
-    --spring.data.mongodb.uri=${SPRING_DATA_MONGODB_URI} \
-    --jwt.secret=${JWT_SECRET} \
-    --allowed.origins=${ALLOWED_ORIGINS} \
-    --server.port=${PORT:-10000}"]
+CMD ["sh", "-c", "java -jar app.jar --spring.data.mongodb.uri=$SPRING_DATA_MONGODB_URI --jwt.secret=$JWT_SECRET --allowed.origins=$ALLOWED_ORIGINS --server.port=${PORT:-10000}"]
