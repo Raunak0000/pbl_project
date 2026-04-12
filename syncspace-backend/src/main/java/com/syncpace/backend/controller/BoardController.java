@@ -5,8 +5,6 @@ import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.BoardRepo;
 import com.syncpace.backend.repository.TaskRepo;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +22,8 @@ public class BoardController {
 
     @GetMapping
     public ResponseEntity<?> getAllBoards(
-            @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return ResponseEntity.ok(boardRepo.findAll(pageable).getContent());
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(boardRepo.findByUserId(user.getId()));
     }
 
     @PostMapping
