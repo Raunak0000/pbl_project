@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Task } from '../types';
+import { Task, PRIORITY_CONFIG, LABEL_OPTIONS, Priority } from '../types';
 import { useLiveEditing } from '../contexts/LiveEditingContext';
-import { Clock, CheckSquare, AlertCircle, User as UserIcon } from 'lucide-react';
+import { Clock, CheckSquare, AlertCircle } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -12,38 +11,35 @@ interface TaskCardProps {
   isBlocked?: boolean;
 }
 
-// Helper: determine due-date badge state
 const getDueDateState = (dueDate?: string): 'overdue' | 'due_soon' | 'upcoming' | null => {
   if (!dueDate) return null;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const due = new Date(dueDate);
   due.setHours(0, 0, 0, 0);
-  const diffMs = due.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   if (diffDays < 0) return 'overdue';
   if (diffDays <= 3) return 'due_soon';
   return 'upcoming';
 };
 
 const dueDateColors: Record<string, string> = {
-  overdue: 'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
+  overdue:  'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
   due_soon: 'bg-[#3D2E0A] text-[#D29922] border-[#5C440F]',
   upcoming: 'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
 };
 
-const priorityDotColors: Record<string, string> = {
-  high: 'bg-[#F85149]',
-  medium: 'bg-[#D29922]',
-  low: 'bg-[#484F58]',
+const statusBadgeColors: Record<string, string> = {
+  'To Do':       'bg-[#2D1F63] text-[#A78BFA] border-[#4C3D7A]',
+  'In Progress': 'bg-[#1E3A5F] text-[#58A6FF] border-[#2D5A8E]',
+  'Done':        'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
+  'Blocked':     'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
 };
 
-const statusBadgeColors: Record<string, string> = {
-  'To Do': 'bg-[#2D1F63] text-[#A78BFA] border-[#4C3D7A]',
-  'In Progress': 'bg-[#1E3A5F] text-[#58A6FF] border-[#2D5A8E]',
-  'Done': 'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
-  'Blocked': 'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
-};
+// Map label names to their color config for the card
+const labelColorMap: Record<string, string> = Object.fromEntries(
+  LABEL_OPTIONS.map(l => [l.name, l.bg])
+);
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isBlocked }) => {
   const [isOver, setIsOver] = useState(false);
@@ -54,18 +50,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
   const isDone = task.status === 'Done';
   const isInProgress = task.status === 'In Progress';
   const dueDateState = getDueDateState(task.dueDate);
-  const priority = task.priority || 'low';
+  const priority = (task.priority || 'low') as Priority;
+  const priorityCfg = PRIORITY_CONFIG[priority];
 
-  // Shake animation for blocked moves
   const shakeVariants = {
-    idle: { x: 0 },
-    shake: {
-      x: [0, -4, 4, -4, 4, 0],
-      transition: {
-        duration: 0.3,
-        ease: 'easeInOut',
-      },
-    },
+    idle:  { x: 0 },
+    shake: { x: [0, -4, 4, -4, 4, 0], transition: { duration: 0.3, ease: 'easeInOut' } },
   };
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -74,9 +64,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
     setIsDragging(true);
   };
 
-  const handleDragEnd = () => {
-    setIsDragging(false);
-  };
+  const handleDragEnd = () => setIsDragging(false);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -93,7 +81,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
     e.preventDefault();
     e.stopPropagation();
     setIsOver(false);
-
     const data = e.dataTransfer.getData('application/json');
     if (data && onTaskDrop) {
       try {
@@ -102,33 +89,23 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
           onTaskDrop(parsed.id, task.id);
         }
       } catch (err) {
-        console.error("Error parsing task drag data", err);
+        console.error('Error parsing task drag data', err);
       }
     }
   };
 
   const getChecklistProgress = (html: string) => {
     if (!html) return null;
-
-    const checkedAttr = html.match(/data-checked="true"/g) || [];
+    const checkedAttr   = html.match(/data-checked="true"/g)  || [];
     const uncheckedAttr = html.match(/data-checked="false"/g) || [];
     const attrTotal = checkedAttr.length + uncheckedAttr.length;
     if (attrTotal > 0) {
-      return {
-        total: attrTotal,
-        completed: checkedAttr.length,
-        percent: Math.round((checkedAttr.length / attrTotal) * 100)
-      };
+      return { total: attrTotal, completed: checkedAttr.length, percent: Math.round((checkedAttr.length / attrTotal) * 100) };
     }
-
-    const allChecks = html.match(/\[( |x|X)\]/g) || [];
-    const completedChecks = html.match(/\[(x|X)\]/g) || [];
+    const allChecks       = html.match(/\[( |x|X)\]/g) || [];
+    const completedChecks = html.match(/\[(x|X)\]/g)   || [];
     if (allChecks.length === 0) return null;
-    return {
-      total: allChecks.length,
-      completed: completedChecks.length,
-      percent: Math.round((completedChecks.length / allChecks.length) * 100)
-    };
+    return { total: allChecks.length, completed: completedChecks.length, percent: Math.round((completedChecks.length / allChecks.length) * 100) };
   };
 
   const checklistProgress = getChecklistProgress(task.description);
@@ -138,10 +115,8 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
       animate={isBlocked ? 'shake' : 'idle'}
       variants={shakeVariants}
       className={`
-        relative
-        bg-[#161B22] rounded-xl p-4
-        border border-[#30363D]
-        hover:border-[#8B949E]
+        relative bg-[#161B22] rounded-xl p-4
+        border border-[#30363D] hover:border-[#8B949E]
         cursor-pointer transition-all duration-200 ease-in-out
         ${isInProgress ? 'border-l-4 border-l-[#3FB950]' : ''}
         ${isDone ? 'opacity-50' : ''}
@@ -160,23 +135,27 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
         onClick={() => onSelectTask(task)}
         className="flex flex-col w-full relative"
       >
-        {/* Priority dot — top-right */}
+        {/* Priority badge — top right */}
         <div className="absolute top-0 right-0">
-          <span className={`inline-block w-2.5 h-2.5 rounded-full ${priorityDotColors[priority]}`} title={`Priority: ${priority}`} />
+          <span
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border ${priorityCfg.badge}`}
+            title={`Priority: ${priorityCfg.label}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${priorityCfg.dot}`} />
+            {priorityCfg.label}
+          </span>
         </div>
 
         {/* Live editing indicator */}
         {editors.length > 0 && (
           <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-[#58A6FF]">
             <div className="w-1.5 h-1.5 rounded-full bg-[#58A6FF] animate-pulse" />
-            <span>
-              {editors.map(e => e.userName).join(', ')} editing...
-            </span>
+            <span>{editors.map(e => e.userName).join(', ')} editing...</span>
           </div>
         )}
 
         {/* Title + Team */}
-        <div className="flex justify-between items-start gap-3 mb-2 pr-4">
+        <div className="flex justify-between items-start gap-3 mb-2 pr-16">
           <h3 className={`font-semibold text-[#E6EDF3] text-sm leading-snug break-words w-full ${isDone ? 'line-through text-[#484F58]' : ''}`}>
             {task.title}
           </h3>
@@ -194,12 +173,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
           </div>
         </div>
 
-        {/* Status badge + Due date badge — always visible */}
+        {/* Status badge + Due date */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusBadgeColors[task.status] || 'bg-[#21262D] text-[#8B949E] border-[#30363D]'}`}>
             {task.status}
           </span>
-
           {task.dueDate && dueDateState && (
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${dueDateColors[dueDateState]}`}>
               <Clock className="w-3 h-3" />
@@ -208,6 +186,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
           )}
         </div>
 
+        {/* Labels */}
+        {task.labels && task.labels.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {task.labels.map(label => (
+              <span
+                key={label}
+                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border ${labelColorMap[label] || 'bg-[#21262D] text-[#8B949E] border-[#30363D]'}`}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Tags and Assignee */}
         <div className="flex flex-wrap items-center gap-1.5 min-h-[1.25rem]">
           {task.tags?.map(tag => (
@@ -215,7 +207,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onSelectTask, onTaskDrop, isB
               {tag}
             </span>
           ))}
-
           {task.assignee && (
             <div className="ml-auto flex items-center">
               <div className="w-5 h-5 rounded-full overflow-hidden bg-[#1F3D20] border border-[#1A5C2E] flex items-center justify-center" title={task.assignee}>

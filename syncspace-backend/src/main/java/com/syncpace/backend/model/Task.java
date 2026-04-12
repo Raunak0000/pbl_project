@@ -30,6 +30,12 @@ public class Task {
     private String team;
     private List<String> blockedBy;
 
+    // "high" | "medium" | "low"
+    private String priority;
+
+    // Color-coded labels e.g. ["bug", "feature", "urgent"]
+    private List<String> labels;
+
     @CreatedDate
     private LocalDateTime createdAt;
 
@@ -119,6 +125,22 @@ public class Task {
 
     public void setBlockedBy(List<String> blockedBy) {
         this.blockedBy = blockedBy;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public List<String> getLabels() {
+        return labels;
+    }
+
+    public void setLabels(List<String> labels) {
+        this.labels = labels;
     }
 
     public LocalDateTime getCreatedAt() {

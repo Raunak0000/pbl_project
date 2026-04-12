@@ -14,7 +14,6 @@ import java.util.List;
 @Service
 public class TaskService {
 
-    // REPLACE WITH THIS:
     private final TaskRepo taskRepo;
     private final ActivityLogRepo activityLogRepo;
 
@@ -31,7 +30,6 @@ public class TaskService {
         return taskRepo.findById(taskId).orElse(null);
     }
 
-    // REPLACE WITH THIS:
     public Task createTask(Task task, User currentUser) {
         Task saved = taskRepo.save(task);
         logActivity(saved.getId(), saved.getBoardId(), currentUser,
@@ -39,7 +37,6 @@ public class TaskService {
         return saved;
     }
 
-    // REPLACE WITH THIS:
     public Task updateTask(String taskId, Task updatedTask, User currentUser) {
         Task existingTask = taskRepo.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
@@ -90,10 +87,27 @@ public class TaskService {
             existingTask.setBlockedBy(updatedTask.getBlockedBy());
         }
 
+        // --- Priority ---
+        if (updatedTask.getPriority() != null && !updatedTask.getPriority().equals(existingTask.getPriority())) {
+            logActivity(taskId, existingTask.getBoardId(), currentUser,
+                    ActivityAction.PRIORITY_CHANGED,
+                    existingTask.getPriority(),
+                    updatedTask.getPriority());
+            existingTask.setPriority(updatedTask.getPriority());
+        }
+
+        // --- Labels ---
+        if (updatedTask.getLabels() != null && !updatedTask.getLabels().equals(existingTask.getLabels())) {
+            logActivity(taskId, existingTask.getBoardId(), currentUser,
+                    ActivityAction.TAGS_CHANGED,
+                    existingTask.getLabels() != null ? existingTask.getLabels().toString() : null,
+                    updatedTask.getLabels().toString());
+            existingTask.setLabels(updatedTask.getLabels());
+        }
+
         return taskRepo.save(existingTask);
     }
 
-    // REPLACE WITH THIS:
     public Task updateTaskStatus(String taskId, TaskStatus newStatus, User currentUser) {
         Task task = taskRepo.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
@@ -118,7 +132,6 @@ public class TaskService {
         return saved;
     }
 
-    // REPLACE WITH THIS:
     public void deleteTask(String taskId, User currentUser) {
         Task task = taskRepo.findById(taskId).orElse(null);
         if (task != null) {

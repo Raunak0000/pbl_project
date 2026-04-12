@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Task, STATUSES, TEAMS, ActivityLog } from '../types';
+import { Task, STATUSES, TEAMS, ActivityLog, PRIORITY_CONFIG, LABEL_OPTIONS, Priority } from '../types';
 import TiptapEditor from './TiptapEditor';
 import { useLiveEditing } from '../contexts/LiveEditingContext';
 import PresenceIndicator from './PresenceIndicator';
-import { Tag, Clock, Users, Link2, FileText, CheckCircle2, ChevronDown, Flag, User as UserIcon, History } from 'lucide-react';
+import { Tag, Clock, Users, Link2, FileText, CheckCircle2, ChevronDown, Flag, User as UserIcon, History, Bookmark } from 'lucide-react';
 import { api } from '../services/api';
 
 interface TaskModalProps {
@@ -15,10 +15,10 @@ interface TaskModalProps {
 }
 
 const statusBadgeColors: Record<string, string> = {
-  'To Do': 'bg-[#2D1F63] text-[#A78BFA] border-[#4C3D7A]',
+  'To Do':       'bg-[#2D1F63] text-[#A78BFA] border-[#4C3D7A]',
   'In Progress': 'bg-[#1E3A5F] text-[#58A6FF] border-[#2D5A8E]',
-  'Done': 'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
-  'Blocked': 'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
+  'Done':        'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
+  'Blocked':     'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
 };
 
 const getDueDateState = (dueDate?: string): 'overdue' | 'due_soon' | 'upcoming' | null => {
@@ -27,15 +27,14 @@ const getDueDateState = (dueDate?: string): 'overdue' | 'due_soon' | 'upcoming' 
   now.setHours(0, 0, 0, 0);
   const due = new Date(dueDate);
   due.setHours(0, 0, 0, 0);
-  const diffMs = due.getTime() - now.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const diffDays = (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   if (diffDays < 0) return 'overdue';
   if (diffDays <= 3) return 'due_soon';
   return 'upcoming';
 };
 
 const dueDateColors: Record<string, string> = {
-  overdue: 'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
+  overdue:  'bg-[#3D0F0F] text-[#F85149] border-[#5C1A1A]',
   due_soon: 'bg-[#3D2E0A] text-[#D29922] border-[#5C440F]',
   upcoming: 'bg-[#0F3D20] text-[#3FB950] border-[#1A5C2E]',
 };
@@ -44,7 +43,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
   const { getTaskEditors, notifyEditing } = useLiveEditing();
   const editors = task ? getTaskEditors(task.id) : [];
 
-  // --- Activity Log State ---
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
@@ -57,16 +55,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
     tags: [],
     team: 'Unassigned',
     priority: 'medium',
+    labels: [],
   });
   const [newTag, setNewTag] = useState('');
 
   // Fetch activity logs when modal opens for an existing task
   useEffect(() => {
     const isEdit = task && task.id !== '';
-    if (!isEdit) {
-      setLogs([]);
-      return;
-    }
+    if (!isEdit) { setLogs([]); return; }
     const fetchLogs = async () => {
       setLogsLoading(true);
       try {
@@ -82,11 +78,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
     fetchLogs();
   }, [task?.id]);
 
-  // When task prop changes, initialize state
+  // When task prop changes, initialise state
   useEffect(() => {
-    // Treat empty string ID as "new task" (passed from Kanban column "Add task" preset)
     const isEdit = task && task.id !== '';
-
     if (isEdit) {
       setFormData({
         title: task.title,
@@ -97,22 +91,24 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
         tags: task.tags || [],
         team: task.team || 'Unassigned',
         priority: task.priority || 'medium',
+        labels: task.labels || [],
       });
       notifyEditing('', task.id);
     } else {
       setFormData({
         title: '',
         description: '',
-        status: task?.status || 'To Do', // Pre-fill status if provided by column drop
+        status: task?.status || 'To Do',
         assignee: '',
         dueDate: '',
         tags: [],
         team: task?.team || 'Unassigned',
         priority: 'medium',
+        labels: [],
       });
       notifyEditing('', null);
     }
-  }, [task?.id, task?.status]); // Re-run if ID changes or if status preset changes
+  }, [task?.id, task?.status]);
 
   const handleDescriptionChange = (html: string) => {
     setFormData(prev => ({ ...prev, description: html }));
@@ -121,18 +117,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-
-    // Instant update for sidebar fields if we're editing an existing task
     if (task && task.id !== '' && onUpdate && name !== 'title') {
       onUpdate(task.id, { [name]: value });
     }
   };
 
   const handleTitleBlur = () => {
-    if (task && task.id !== '' && onUpdate) {
-      if (formData.title !== task.title) {
-        onUpdate(task.id, { title: formData.title });
-      }
+    if (task && task.id !== '' && onUpdate && formData.title !== task.title) {
+      onUpdate(task.id, { title: formData.title });
     }
   };
 
@@ -142,9 +134,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
       if (!formData.tags?.includes(newTag.trim())) {
         const updatedTags = [...(formData.tags || []), newTag.trim()];
         setFormData(prev => ({ ...prev, tags: updatedTags }));
-        if (task && task.id !== '' && onUpdate) {
-          onUpdate(task.id, { tags: updatedTags });
-        }
+        if (task && task.id !== '' && onUpdate) onUpdate(task.id, { tags: updatedTags });
       }
       setNewTag('');
     }
@@ -153,76 +143,65 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
   const handleRemoveTag = (tagToRemove: string) => {
     const updatedTags = formData.tags?.filter(tag => tag !== tagToRemove) || [];
     setFormData(prev => ({ ...prev, tags: updatedTags }));
-    if (task && task.id !== '' && onUpdate) {
-      onUpdate(task.id, { tags: updatedTags });
-    }
+    if (task && task.id !== '' && onUpdate) onUpdate(task.id, { tags: updatedTags });
+  };
+
+  const handleToggleLabel = (labelName: string) => {
+    const current = formData.labels || [];
+    const updatedLabels = current.includes(labelName)
+      ? current.filter(l => l !== labelName)
+      : [...current, labelName];
+    setFormData(prev => ({ ...prev, labels: updatedLabels }));
+    if (task && task.id !== '' && onUpdate) onUpdate(task.id, { labels: updatedLabels });
   };
 
   const handleSubmit = () => {
     if (!formData.title) return;
-    onSave({
-      id: task?.id || new Date().toISOString(),
-      ...formData,
-    });
+    onSave({ id: task?.id || new Date().toISOString(), ...formData });
   };
 
   // Debounced auto-save for description
   useEffect(() => {
-    if (!task || task.id === '' || !onUpdate) {
-      return;
-    }
-    if (formData.description === task.description) {
-      return;
-    }
+    if (!task || task.id === '' || !onUpdate || formData.description === task.description) return;
     const handler = setTimeout(() => {
       onUpdate(task.id, { description: formData.description });
     }, 750);
-
     return () => clearTimeout(handler);
   }, [formData.description, task, onUpdate]);
 
   const formatLog = (log: ActivityLog): string => {
     const who = log.username;
     switch (log.action) {
-      case 'TASK_CREATED':
-        return `${who} created this task`;
-      case 'TASK_DELETED':
-        return `${who} deleted this task`;
-      case 'STATUS_CHANGED':
-        return `${who} moved status from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
-      case 'ASSIGNEE_CHANGED':
-        return `${who} changed assignee from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
-      case 'DUE_DATE_CHANGED':
-        return `${who} changed due date from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
-      case 'TITLE_CHANGED':
-        return `${who} renamed task from "${log.oldValue}" to "${log.newValue}"`;
-      case 'DESCRIPTION_CHANGED':
-        return `${who} updated the description`;
-      case 'TAGS_CHANGED':
-        return `${who} updated tags`;
-      case 'BLOCKED_BY_CHANGED':
-        return `${who} updated task dependencies`;
-      default:
-        return `${who} made a change`;
+      case 'TASK_CREATED':      return `${who} created this task`;
+      case 'TASK_DELETED':      return `${who} deleted this task`;
+      case 'STATUS_CHANGED':    return `${who} moved status from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
+      case 'ASSIGNEE_CHANGED':  return `${who} changed assignee from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
+      case 'DUE_DATE_CHANGED':  return `${who} changed due date from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
+      case 'TITLE_CHANGED':     return `${who} renamed task from "${log.oldValue}" to "${log.newValue}"`;
+      case 'DESCRIPTION_CHANGED': return `${who} updated the description`;
+      case 'TAGS_CHANGED':      return `${who} updated tags`;
+      case 'BLOCKED_BY_CHANGED': return `${who} updated task dependencies`;
+      case 'PRIORITY_CHANGED':  return `${who} changed priority from "${log.oldValue ?? 'none'}" to "${log.newValue}"`;
+      default:                  return `${who} made a change`;
     }
   };
 
   const formatTimestamp = (timestamp: string): string => {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
+    const diffMins  = Math.floor((now.getTime() - date.getTime()) / 60000);
     const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
+    const diffDays  = Math.floor(diffHours / 24);
+    if (diffMins < 1)   return 'just now';
+    if (diffMins < 60)  return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return 'yesterday';
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
   const dueDateState = getDueDateState(formData.dueDate);
+  const priority = (formData.priority || 'medium') as Priority;
+  const priorityCfg = PRIORITY_CONFIG[priority];
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex justify-center items-center">
@@ -240,6 +219,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
           </div>
 
           <div className="p-5 flex flex-col gap-5">
+
             {/* Status */}
             <div className="flex flex-col gap-2 border-b border-[#21262D] pb-4">
               <label className="text-xs font-semibold text-[#8B949E] uppercase tracking-widest flex items-center gap-1.5">
@@ -258,26 +238,54 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
               </div>
             </div>
 
-            {/* Priority */}
+            {/* Priority — full pill buttons */}
             <div className="flex flex-col gap-2 border-b border-[#21262D] pb-4">
               <label className="text-xs font-semibold text-[#8B949E] uppercase tracking-widest flex items-center gap-1.5">
                 <Flag size={14} /> Priority
               </label>
-              <div className="relative">
-                <select
-                  name="priority"
-                  value={formData.priority}
-                  onChange={handleChange}
-                  className="w-full appearance-none pl-8 pr-3 py-1.5 bg-[#21262D] border border-[#30363D] rounded-md text-sm font-medium text-[#E6EDF3] focus:outline-none focus:ring-2 focus:ring-[#3FB950] cursor-pointer hover:bg-[#30363D]"
-                >
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center">
-                  <div className={`w-2 h-2 rounded-full ${formData.priority === 'high' ? 'bg-[#F85149]' : formData.priority === 'medium' ? 'bg-[#D29922]' : 'bg-[#484F58]'}`} />
-                </div>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B949E] pointer-events-none" />
+              <div className="flex gap-2">
+                {(['high', 'medium', 'low'] as Priority[]).map(p => {
+                  const cfg = PRIORITY_CONFIG[p];
+                  const isActive = formData.priority === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, priority: p }));
+                        if (task && task.id !== '' && onUpdate) onUpdate(task.id, { priority: p });
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-bold border transition-all
+                        ${isActive ? cfg.badge + ' ring-1 ring-offset-1 ring-offset-[#0D1117] ring-current' : 'bg-[#21262D] text-[#484F58] border-[#30363D] hover:border-[#8B949E] hover:text-[#8B949E]'}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                      {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Labels */}
+            <div className="flex flex-col gap-2 border-b border-[#21262D] pb-4">
+              <label className="text-xs font-semibold text-[#8B949E] uppercase tracking-widest flex items-center gap-1.5">
+                <Bookmark size={14} /> Labels
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {LABEL_OPTIONS.map(labelOpt => {
+                  const isActive = (formData.labels || []).includes(labelOpt.name);
+                  return (
+                    <button
+                      key={labelOpt.name}
+                      type="button"
+                      onClick={() => handleToggleLabel(labelOpt.name)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all
+                        ${isActive ? labelOpt.bg : 'bg-[#21262D] text-[#484F58] border-[#30363D] hover:border-[#8B949E] hover:text-[#8B949E]'}`}
+                    >
+                      {labelOpt.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -314,8 +322,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
                 value={formData.dueDate}
                 onChange={handleChange}
                 className={`w-full px-3 py-1.5 rounded-md text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-[#3FB950]
-                  ${dueDateState ? dueDateColors[dueDateState] : 'bg-[#21262D] border-[#30363D] text-[#E6EDF3] hover:bg-[#30363D]'}
-                `}
+                  ${dueDateState ? dueDateColors[dueDateState] : 'bg-[#21262D] border-[#30363D] text-[#E6EDF3] hover:bg-[#30363D]'}`}
               />
             </div>
 
@@ -361,7 +368,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
               />
             </div>
 
-            {/* Activity Log — only shown for existing tasks */}
+            {/* Activity Log */}
             {task && task.id !== '' && (
               <div className="flex flex-col border-t border-[#21262D] pt-4 mt-2">
                 <label className="text-xs font-semibold text-[#8B949E] uppercase tracking-widest flex items-center gap-1.5 mb-3">
@@ -377,9 +384,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
                       {logs.map(log => (
                         <li key={log.id} className="flex items-start gap-2.5">
                           <div className="w-5 h-5 rounded-full bg-[#1F3D20] border border-[#1A5C2E] flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-[9px] font-bold text-[#3FB950]">
-                              {log.username.substring(0, 2).toUpperCase()}
-                            </span>
+                            <span className="text-[9px] font-bold text-[#3FB950]">{log.username.substring(0, 2).toUpperCase()}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-[#C9D1D9] leading-tight break-words">{formatLog(log)}</p>
@@ -417,7 +422,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
             className="w-full text-3xl md:text-4xl font-bold text-[#E6EDF3] placeholder-[#484F58] border-none focus:outline-none focus:ring-0 mb-8 bg-transparent shrink-0"
           />
 
-          {/* Editor section takes full remaining height */}
           <div className="flex-1 flex flex-col border border-[#21262D] rounded-xl overflow-hidden min-h-[300px]">
             <div className="bg-[#0D1117] border-b border-[#21262D] px-4 py-2 flex items-center gap-2 text-sm font-semibold text-[#8B949E] shrink-0">
               <FileText size={16} /> Description
