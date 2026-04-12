@@ -1,4 +1,5 @@
 target/
+BOOT-INF
 *.log
 .git
 .gitignore
