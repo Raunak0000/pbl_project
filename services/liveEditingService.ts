@@ -34,8 +34,11 @@ class LiveEditingService {
   }
 
   private connect() {
+    const wsUrl = (import.meta.env.VITE_API_URL || 'http://localhost:10000/api').replace('/api', '');
+
     this.client = new Client({
       reconnectDelay: 5000,
+      webSocketFactory: () => new SockJS(`${wsUrl}/ws`),
       onConnect: () => {
         this.isConnected = true;
         this.client!.subscribe('/topic/live-editing', (message: IMessage) => {
