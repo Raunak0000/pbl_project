@@ -14,4 +14,7 @@ COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 10000
 
+ARG BUILD_DATE=unknown
+RUN echo "Build date: $BUILD_DATE"
+
 CMD ["sh", "-c", "java -jar app.jar --server.port=${PORT:-10000}"]
