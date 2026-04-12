@@ -21,15 +21,15 @@ public class BoardController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllBoards(
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(boardRepo.findByUserId(user.getId()));
+    public ResponseEntity<?> getAllBoards(@AuthenticationPrincipal User user) {
+        // Collaborative: every authenticated user sees all boards
+        return ResponseEntity.ok(boardRepo.findAll());
     }
 
     @PostMapping
     public ResponseEntity<Board> createBoard(@AuthenticationPrincipal User user,
             @RequestBody Board board) {
-        // Set the owner to the authenticated user
+        // Track who created it, but all users can see/use it
         board.setUserId(user.getId());
         return ResponseEntity.ok(boardRepo.save(board));
     }
@@ -37,12 +37,18 @@ public class BoardController {
     @DeleteMapping("/{boardId}")
     public ResponseEntity<?> deleteBoard(@AuthenticationPrincipal User user,
             @PathVariable String boardId) {
-        // Verify the board belongs to the authenticated user before deleting
-        Board board = boardRepo.findByIdAndUserId(boardId, user.getId())
-                .orElse(null);
+        Board board = boardRepo.findById(boardId).orElse(null);
         if (board == null) {
-            return ResponseEntity.status(403).body("Board not found or access denied");
+            return ResponseEntity.notFound().build();
         }
+
+        // Allow deletion by the board creator OR any admin
+        boolean isOwner = user.getId().equals(board.getUserId());
+        boolean isAdmin = user.getRole() == User.Role.ADMIN;
+        if (!isOwner && !isAdmin) {
+            return ResponseEntity.status(403).body("Only the board creator or an admin can delete this board");
+        }
+
         taskRepo.deleteByBoardId(boardId);
         boardRepo.deleteById(boardId);
         return ResponseEntity.ok().build();
