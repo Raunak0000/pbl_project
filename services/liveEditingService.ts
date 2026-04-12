@@ -32,7 +32,7 @@ class LiveEditingService {
     this.connect();
     this.startCleanup();
   }
-
+  // updated this 
   private connect() {
     const wsUrl = (import.meta.env.VITE_API_URL || 'http://localhost:10000/api').replace('/api', '');
 
