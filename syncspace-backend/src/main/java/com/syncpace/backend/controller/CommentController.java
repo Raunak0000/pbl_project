@@ -9,6 +9,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ public class CommentController {
         comment.setUserId(user.getId());
         comment.setUsername(user.getUsername());
         comment.setContent(body.get("content"));
+        comment.setCreatedAt(LocalDateTime.now());
 
         Comment saved = commentRepo.save(comment);
 
@@ -54,7 +56,7 @@ public class CommentController {
         payload.put("comment", saved);
         payload.put("userId", user.getId());
         event.put("payload", payload);
-        messagingTemplate.convertAndSend("/topic/live-editing", event);
+        messagingTemplate.convertAndSend("/topic/live-editing", (Object) event);
 
         return ResponseEntity.ok(saved);
     }
@@ -86,7 +88,7 @@ public class CommentController {
         payload.put("commentId", commentId);
         payload.put("userId", user.getId());
         event.put("payload", payload);
-        messagingTemplate.convertAndSend("/topic/live-editing", event);
+        messagingTemplate.convertAndSend("/topic/live-editing", (Object) event);
 
         return ResponseEntity.ok(Map.of("message", "Comment deleted"));
     }
