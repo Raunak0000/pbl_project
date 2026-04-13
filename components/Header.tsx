@@ -1,11 +1,13 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import ThemeToggle from './ThemeToggle';
-import { Board, TEAMS } from '../types';
+import { Board, TEAMS, Notification } from '../types';
 import { useLiveEditing } from '../contexts/LiveEditingContext';
+import { liveEditingService, LiveEditingEvent } from '../services/liveEditingService';
+import { notificationApi } from '../services/api';
 import PresenceIndicator from './PresenceIndicator';
 import CommandPalette, { CommandPaletteItem } from './CommandPalette';
-import { ArrowLeft, Plus, Search, LogOut, Layout, Calendar as CalendarIcon, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Search, LogOut, Layout, Calendar as CalendarIcon, Users, Bell, MessageSquare, UserPlus } from 'lucide-react';
 
 type View = 'kanban' | 'calendar';
 
@@ -38,6 +40,65 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const { activeEditors } = useLiveEditing();
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+
+  // Notifications State
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  useEffect(() => {
+    // Fetch initial notifications
+    const fetchNotifs = async () => {
+      try {
+        const notifs = await notificationApi.getNotifications();
+        setNotifications(notifs);
+      } catch (err) {
+        console.error("Failed to fetch notifications", err);
+      }
+    };
+    fetchNotifs();
+
+    // Subscribe to STOMP events for real-time notifications
+    const unsubscribe = liveEditingService.subscribe('header-notifications', (event: LiveEditingEvent) => {
+      if (event.type === 'NOTIFICATION_ADDED') {
+        const notif = event.payload as unknown as Notification;
+        setNotifications(prev => [notif, ...prev]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleMarkAsRead = async (id: string, boardId: string, taskId: string) => {
+    try {
+      await notificationApi.markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+      // Optional: if onSelectBoard is provided, navigate
+      if (onSelectBoard) onSelectBoard(boardId);
+      setIsNotifOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await notificationApi.clearAll();
+      setNotifications([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -152,6 +213,85 @@ const Header: React.FC<HeaderProps> = ({
               <PresenceIndicator editors={activeEditors} maxDisplay={3} compact />
             </div>
           )}
+
+          {/* Notifications Bell */}
+          <div className="relative">
+            <button
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className="p-2 text-[#8B949E] hover:text-[#E6EDF3] transition-colors relative"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 bg-[#F85149] text-white text-[10px] font-bold rounded-full">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {isNotifOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsNotifOpen(false)} 
+                />
+                <div className="absolute right-0 mt-2 w-80 bg-[#161B22] border border-[#30363D] rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[400px]">
+                  <div className="p-3 border-b border-[#30363D] flex items-center justify-between bg-[#21262D]">
+                    <h3 className="text-[#E6EDF3] font-bold text-sm">Notifications</h3>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={handleMarkAllRead}
+                        className="text-xs text-[#58A6FF] hover:text-white"
+                      >
+                        Mark all read
+                      </button>
+                      <button 
+                        onClick={handleClearAll}
+                        className="text-xs text-[#F85149] hover:text-red-400"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-[#8B949E] text-sm">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        {notifications.map(notif => (
+                          <div 
+                            key={notif.id}
+                            onClick={() => handleMarkAsRead(notif.id, notif.boardId, notif.taskId)}
+                            className={`p-3 border-b border-[#30363D] last:border-0 cursor-pointer hover:bg-[#21262D] transition-colors flex gap-3 ${
+                              !notif.read ? 'bg-[#0D1117] border-l-2 border-l-[#58A6FF]' : ''
+                            }`}
+                          >
+                            <div className="flex-shrink-0 mt-1">
+                              {notif.type === 'COMMENT' ? (
+                                <MessageSquare size={16} className="text-[#3FB950]" />
+                              ) : (
+                                <UserPlus size={16} className="text-[#58A6FF]" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm ${!notif.read ? 'text-[#E6EDF3] font-medium' : 'text-[#8B949E]'}`}>
+                                {notif.message}
+                              </p>
+                              <span className="text-[10px] text-[#8B949E]">
+                                {new Date(notif.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
           <ThemeToggle />
         </div>

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Board, Task, AuthResponse, User, ActivityLog, Comment } from '../types';
+import { Board, Task, AuthResponse, User, ActivityLog, Comment, Notification } from '../types';
 
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
@@ -115,5 +115,29 @@ export const commentApi = {
 
     deleteComment: async (taskId: string, commentId: string): Promise<void> => {
         await axiosInstance.delete(`/tasks/${taskId}/comments/${commentId}`);
+    },
+};
+
+export const notificationApi = {
+    getNotifications: async (): Promise<Notification[]> => {
+        const response = await axiosInstance.get('/notifications');
+        return response.data;
+    },
+
+    getUnreadCount: async (): Promise<number> => {
+        const response = await axiosInstance.get('/notifications/unread-count');
+        return response.data.count;
+    },
+
+    markAsRead: async (id: string): Promise<void> => {
+        await axiosInstance.patch(`/notifications/${id}/read`);
+    },
+
+    markAllAsRead: async (): Promise<void> => {
+        await axiosInstance.patch('/notifications/read-all');
+    },
+
+    clearAll: async (): Promise<void> => {
+        await axiosInstance.delete('/notifications');
     },
 };

@@ -1,4 +1,4 @@
-import { Client, IMessage } from '@stomp/stompjs';
+import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client/dist/sockjs';
 import { Task, Board, Comment } from '../types';
 
@@ -12,7 +12,8 @@ export type LiveEditingEvent =
   | { type: 'USER_EDITING'; payload: { boardId: string; taskId: string | null; userId: string; userName: string } }
   | { type: 'USER_LEFT'; payload: { userId: string } }
   | { type: 'COMMENT_ADDED'; payload: { taskId: string; boardId: string; comment: Comment; userId: string } }
-  | { type: 'COMMENT_DELETED'; payload: { taskId: string; boardId: string; commentId: string; userId: string } };
+  | { type: 'COMMENT_DELETED'; payload: { taskId: string; boardId: string; commentId: string; userId: string } }
+  | { type: 'NOTIFICATION_ADDED'; payload: { id: string; type: string; message: string; taskId: string; boardId: string; read: boolean; createdAt: string; userId: string } };
 
 export interface ActiveEditor {
   userId: string;
@@ -29,6 +30,7 @@ class LiveEditingService {
   private currentUserName: string = '';
   private isConnected: boolean = false;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
+  private notificationSub: StompSubscription | null = null;
 
   constructor() {
     this.connect();
@@ -51,6 +53,7 @@ class LiveEditingService {
             console.error('Failed to parse WebSocket event:', e);
           }
         });
+        this.subscribeToNotifications();
       },
       onDisconnect: () => {
         this.isConnected = false;
@@ -76,8 +79,30 @@ class LiveEditingService {
   }
 
   public setUser(userId: string, userName: string) {
-    this.currentUserId = userId;
-    this.currentUserName = userName;
+    if (this.currentUserId !== userId) {
+      this.currentUserId = userId;
+      this.currentUserName = userName;
+      this.subscribeToNotifications();
+    } else {
+      this.currentUserName = userName;
+    }
+  }
+
+  private subscribeToNotifications() {
+    if (!this.isConnected || !this.client?.connected || !this.currentUserId) return;
+    
+    if (this.notificationSub) {
+      this.notificationSub.unsubscribe();
+    }
+    
+    this.notificationSub = this.client.subscribe(`/topic/notifications/${this.currentUserId}`, (message: IMessage) => {
+      try {
+        const event: LiveEditingEvent = JSON.parse(message.body);
+        this.handleIncomingEvent(event);
+      } catch (e) {
+        console.error('Failed to parse Notification event:', e);
+      }
+    });
   }
 
   private broadcastEvent(event: LiveEditingEvent) {

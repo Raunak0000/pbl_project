@@ -1,8 +1,13 @@
 package com.syncpace.backend.controller;
 
 import com.syncpace.backend.model.Comment;
+import com.syncpace.backend.model.Notification;
+import com.syncpace.backend.model.Task;
 import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.CommentRepo;
+import com.syncpace.backend.repository.NotificationRepo;
+import com.syncpace.backend.repository.TaskRepo;
+import com.syncpace.backend.repository.UserRepo;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -20,10 +25,17 @@ public class CommentController {
 
     private final CommentRepo commentRepo;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TaskRepo taskRepo;
+    private final UserRepo userRepo;
+    private final NotificationRepo notificationRepo;
 
-    public CommentController(CommentRepo commentRepo, SimpMessagingTemplate messagingTemplate) {
+    public CommentController(CommentRepo commentRepo, SimpMessagingTemplate messagingTemplate,
+                             TaskRepo taskRepo, UserRepo userRepo, NotificationRepo notificationRepo) {
         this.commentRepo = commentRepo;
         this.messagingTemplate = messagingTemplate;
+        this.taskRepo = taskRepo;
+        this.userRepo = userRepo;
+        this.notificationRepo = notificationRepo;
     }
 
     @GetMapping
@@ -47,7 +59,7 @@ public class CommentController {
 
         Comment saved = commentRepo.save(comment);
 
-        // Broadcast via WebSocket
+        // Broadcast via WebSocket for live-editing
         Map<String, Object> event = new HashMap<>();
         event.put("type", "COMMENT_ADDED");
         Map<String, Object> payload = new HashMap<>();
@@ -57,6 +69,31 @@ public class CommentController {
         payload.put("userId", user.getId());
         event.put("payload", payload);
         messagingTemplate.convertAndSend("/topic/live-editing", (Object) event);
+
+        // Check if we need to send a notification
+        Task task = taskRepo.findById(taskId).orElse(null);
+        if (task != null && task.getAssignee() != null && !task.getAssignee().trim().isEmpty() 
+            && !task.getAssignee().equals(user.getUsername())) {
+            
+            User assignee = userRepo.findByUsername(task.getAssignee()).orElse(null);
+            if (assignee != null) {
+                Notification notif = new Notification();
+                notif.setUserId(assignee.getId());
+                notif.setTaskId(taskId);
+                notif.setBoardId(task.getBoardId());
+                notif.setType("COMMENT");
+                notif.setMessage(user.getUsername() + " commented on '" + task.getTitle() + "'");
+                notif.setCreatedAt(LocalDateTime.now());
+                
+                Notification savedNotif = notificationRepo.save(notif);
+                
+                Map<String, Object> notifEvent = new HashMap<>();
+                notifEvent.put("type", "NOTIFICATION_ADDED");
+                notifEvent.put("payload", savedNotif);
+                
+                messagingTemplate.convertAndSend("/topic/notifications/" + assignee.getId(), (Object) notifEvent);
+            }
+        }
 
         return ResponseEntity.ok(saved);
     }

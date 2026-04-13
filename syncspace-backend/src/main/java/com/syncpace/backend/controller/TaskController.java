@@ -1,18 +1,24 @@
 package com.syncpace.backend.controller;
 
+import com.syncpace.backend.model.Notification;
 import com.syncpace.backend.model.Task;
 import com.syncpace.backend.model.TaskStatus;
 import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.BoardRepo;
 import com.syncpace.backend.repository.CommentRepo;
+import com.syncpace.backend.repository.NotificationRepo;
 import com.syncpace.backend.repository.TaskRepo;
+import com.syncpace.backend.repository.UserRepo;
 import com.syncpace.backend.service.TaskService;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.syncpace.backend.repository.ActivityLogRepo;
@@ -26,14 +32,21 @@ public class TaskController {
     private final TaskRepo taskRepo;
     private final ActivityLogRepo activityLogRepo;
     private final CommentRepo commentRepo;
+    private final UserRepo userRepo;
+    private final NotificationRepo notificationRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public TaskController(TaskService taskService, BoardRepo boardRepo, TaskRepo taskRepo,
-            ActivityLogRepo activityLogRepo, CommentRepo commentRepo) {
+            ActivityLogRepo activityLogRepo, CommentRepo commentRepo, UserRepo userRepo,
+            NotificationRepo notificationRepo, SimpMessagingTemplate messagingTemplate) {
         this.taskService = taskService;
         this.boardRepo = boardRepo;
         this.taskRepo = taskRepo;
         this.activityLogRepo = activityLogRepo;
         this.commentRepo = commentRepo;
+        this.userRepo = userRepo;
+        this.notificationRepo = notificationRepo;
+        this.messagingTemplate = messagingTemplate;
     }
 
     /**
@@ -83,7 +96,36 @@ public class TaskController {
         if (!boardExists(boardId)) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
-        return ResponseEntity.ok(taskService.updateTask(taskId, task, user));
+        
+        Task existingTask = taskService.getTaskById(taskId);
+        String oldAssignee = existingTask != null ? existingTask.getAssignee() : null;
+        String newAssignee = task.getAssignee();
+
+        Task updated = taskService.updateTask(taskId, task, user);
+
+        // Notify if assignee changed and is not blank
+        if (newAssignee != null && !newAssignee.trim().isEmpty() && !newAssignee.equals(oldAssignee) && !newAssignee.equals(user.getUsername())) {
+            User assigneeUser = userRepo.findByUsername(newAssignee).orElse(null);
+            if (assigneeUser != null) {
+                Notification notif = new Notification();
+                notif.setUserId(assigneeUser.getId());
+                notif.setTaskId(taskId);
+                notif.setBoardId(boardId);
+                notif.setType("ASSIGNED");
+                notif.setMessage("You were assigned to '" + updated.getTitle() + "'");
+                notif.setCreatedAt(LocalDateTime.now());
+                
+                Notification savedNotif = notificationRepo.save(notif);
+                
+                Map<String, Object> notifEvent = new HashMap<>();
+                notifEvent.put("type", "NOTIFICATION_ADDED");
+                notifEvent.put("payload", savedNotif);
+                
+                messagingTemplate.convertAndSend("/topic/notifications/" + assigneeUser.getId(), (Object) notifEvent);
+            }
+        }
+
+        return ResponseEntity.ok(updated);
     }
 
     @PatchMapping("/{taskId}/status")

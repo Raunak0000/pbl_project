@@ -94,3 +94,14 @@ export interface Comment {
     content: string;
     createdAt: string;
 }
+
+export interface Notification {
+    id: string;
+    userId: string;
+    message: string;
+    taskId: string;
+    boardId: string;
+    type: 'COMMENT' | 'ASSIGNED';
+    read: boolean;
+    createdAt: string;
+}
