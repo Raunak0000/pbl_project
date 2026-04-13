@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Board, Task, AuthResponse, User, ActivityLog } from '../types';
+import { Board, Task, AuthResponse, User, ActivityLog, Comment } from '../types';
 
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
@@ -99,5 +99,21 @@ export const adminApi = {
             params: { page, size }
         });
         return response.data;
+    },
+};
+
+export const commentApi = {
+    getComments: async (taskId: string): Promise<Comment[]> => {
+        const response = await axiosInstance.get(`/tasks/${taskId}/comments`);
+        return response.data;
+    },
+
+    addComment: async (taskId: string, content: string, boardId: string): Promise<Comment> => {
+        const response = await axiosInstance.post(`/tasks/${taskId}/comments`, { content, boardId });
+        return response.data;
+    },
+
+    deleteComment: async (taskId: string, commentId: string): Promise<void> => {
+        await axiosInstance.delete(`/tasks/${taskId}/comments/${commentId}`);
     },
 };

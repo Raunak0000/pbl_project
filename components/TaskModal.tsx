@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Task, STATUSES, TEAMS, ActivityLog, PRIORITY_CONFIG, LABEL_OPTIONS, Priority } from '../types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Task, STATUSES, TEAMS, ActivityLog, PRIORITY_CONFIG, LABEL_OPTIONS, Priority, Comment } from '../types';
 import TiptapEditor from './TiptapEditor';
 import { useLiveEditing } from '../contexts/LiveEditingContext';
 import PresenceIndicator from './PresenceIndicator';
-import { Tag, Clock, Users, Link2, FileText, CheckCircle2, ChevronDown, Flag, User as UserIcon, History, Bookmark } from 'lucide-react';
-import { api } from '../services/api';
+import { Tag, Clock, Users, Link2, FileText, CheckCircle2, ChevronDown, Flag, User as UserIcon, History, Bookmark, MessageSquare, Send, Trash2 } from 'lucide-react';
+import { api, commentApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { liveEditingService, LiveEditingEvent } from '../services/liveEditingService';
 
 interface TaskModalProps {
   task: Task | null;
@@ -41,10 +43,18 @@ const dueDateColors: Record<string, string> = {
 
 const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, onUpdate }) => {
   const { getTaskEditors, notifyEditing } = useLiveEditing();
+  const { user: currentUser } = useAuth();
   const editors = task ? getTaskEditors(task.id) : [];
 
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+
+  // --- Comments State ---
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
+  const commentsEndRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<Omit<Task, 'id'>>({
     title: '',
@@ -77,6 +87,85 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
     };
     fetchLogs();
   }, [task?.id]);
+
+  // Fetch comments when modal opens for an existing task
+  useEffect(() => {
+    const isEdit = task && task.id !== '';
+    if (!isEdit) { setComments([]); return; }
+    const fetchComments = async () => {
+      setCommentsLoading(true);
+      try {
+        const fetched = await commentApi.getComments(task.id);
+        setComments(fetched);
+      } catch (err) {
+        console.error('Failed to fetch comments', err);
+        setComments([]);
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    fetchComments();
+  }, [task?.id]);
+
+  // Real-time comment updates via WebSocket
+  useEffect(() => {
+    const isEdit = task && task.id !== '';
+    if (!isEdit) return;
+
+    const unsubscribe = liveEditingService.subscribe(`comments-${task.id}`, (event: LiveEditingEvent) => {
+      if (event.type === 'COMMENT_ADDED' && event.payload.taskId === task.id) {
+        const incoming = event.payload.comment;
+        setComments(prev => {
+          if (prev.find(c => c.id === incoming.id)) return prev;
+          return [...prev, incoming];
+        });
+      } else if (event.type === 'COMMENT_DELETED' && event.payload.taskId === task.id) {
+        setComments(prev => prev.filter(c => c.id !== event.payload.commentId));
+      }
+    });
+
+    return () => unsubscribe();
+  }, [task?.id]);
+
+  // Auto-scroll to new comments
+  useEffect(() => {
+    commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [comments.length]);
+
+  const handlePostComment = async () => {
+    if (!newComment.trim() || !task || task.id === '' || postingComment) return;
+    setPostingComment(true);
+    try {
+      const saved = await commentApi.addComment(task.id, newComment.trim(), task.boardId || '');
+      // The server broadcasts via WebSocket, but we also add locally for instant feedback
+      setComments(prev => {
+        if (prev.find(c => c.id === saved.id)) return prev;
+        return [...prev, saved];
+      });
+      setNewComment('');
+    } catch (err) {
+      console.error('Failed to post comment', err);
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!task || task.id === '') return;
+    try {
+      await commentApi.deleteComment(task.id, commentId);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch (err) {
+      console.error('Failed to delete comment', err);
+    }
+  };
+
+  const handleCommentKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handlePostComment();
+    }
+  };
 
   // When task prop changes, initialise state
   useEffect(() => {
@@ -435,6 +524,85 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onSave, onDelete, 
               />
             </div>
           </div>
+
+          {/* Comments Section */}
+          {task && task.id !== '' && (
+            <div className="mt-6 flex flex-col border border-[#21262D] rounded-xl overflow-hidden" style={{ maxHeight: '360px' }}>
+              <div className="bg-[#0D1117] border-b border-[#21262D] px-4 py-2 flex items-center gap-2 text-sm font-semibold text-[#8B949E] shrink-0">
+                <MessageSquare size={16} /> Comments
+                {comments.length > 0 && (
+                  <span className="ml-auto text-xs font-medium bg-[#21262D] text-[#8B949E] px-2 py-0.5 rounded-full">{comments.length}</span>
+                )}
+              </div>
+
+              {/* Comments List */}
+              <div className="flex-1 overflow-y-auto bg-[#0D1117] p-4 space-y-4" style={{ minHeight: '80px', maxHeight: '220px' }}>
+                {commentsLoading ? (
+                  <p className="text-xs text-[#484F58] py-4 text-center">Loading comments...</p>
+                ) : comments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <MessageSquare size={28} className="text-[#30363D] mb-2" />
+                    <p className="text-sm text-[#484F58]">No comments yet</p>
+                    <p className="text-xs text-[#30363D] mt-1">Be the first to leave a comment</p>
+                  </div>
+                ) : (
+                  <>
+                    {comments.map(comment => (
+                      <div key={comment.id} className="group flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-[#1E3A5F] flex items-center justify-center border border-[#2D5A8E] shrink-0 mt-0.5">
+                          <span className="text-[10px] font-bold text-[#58A6FF]">
+                            {comment.username.substring(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[#E6EDF3]">{comment.username}</span>
+                            <span className="text-[10px] text-[#484F58]">{formatTimestamp(comment.createdAt)}</span>
+                            {currentUser && currentUser.id === comment.userId && (
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="ml-auto opacity-0 group-hover:opacity-100 text-[#484F58] hover:text-[#F85149] transition-all p-0.5 rounded"
+                                title="Delete comment"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-sm text-[#C9D1D9] mt-1 break-words leading-relaxed">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={commentsEndRef} />
+                  </>
+                )}
+              </div>
+
+              {/* Comment Input */}
+              <div className="border-t border-[#21262D] bg-[#161B22] px-4 py-3 flex items-center gap-3 shrink-0">
+                <div className="w-7 h-7 rounded-full bg-[#0F3D20] flex items-center justify-center border border-[#1A5C2E] shrink-0">
+                  <span className="text-[10px] font-bold text-[#3FB950]">
+                    {currentUser ? currentUser.username.substring(0, 2).toUpperCase() : '?'}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={handleCommentKeyDown}
+                  placeholder="Write a comment..."
+                  className="flex-1 bg-[#0D1117] border border-[#30363D] rounded-lg px-3 py-2 text-sm text-[#E6EDF3] placeholder-[#484F58] focus:outline-none focus:ring-2 focus:ring-[#3FB950] focus:border-transparent"
+                />
+                <button
+                  onClick={handlePostComment}
+                  disabled={!newComment.trim() || postingComment}
+                  className="p-2 rounded-lg bg-[#238636] hover:bg-[#2EA043] text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Post comment"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <footer className="mt-8 pt-6 border-t border-[#21262D] flex items-center justify-between shrink-0">

@@ -84,3 +84,13 @@ export interface ActivityLog {
     newValue: string | null;
     timestamp: string;
 }
+
+export interface Comment {
+    id: string;
+    taskId: string;
+    boardId: string;
+    userId: string;
+    username: string;
+    content: string;
+    createdAt: string;
+}

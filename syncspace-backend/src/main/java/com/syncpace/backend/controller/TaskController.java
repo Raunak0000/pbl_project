@@ -4,6 +4,7 @@ import com.syncpace.backend.model.Task;
 import com.syncpace.backend.model.TaskStatus;
 import com.syncpace.backend.model.User;
 import com.syncpace.backend.repository.BoardRepo;
+import com.syncpace.backend.repository.CommentRepo;
 import com.syncpace.backend.repository.TaskRepo;
 import com.syncpace.backend.service.TaskService;
 
@@ -24,14 +25,15 @@ public class TaskController {
     private final BoardRepo boardRepo;
     private final TaskRepo taskRepo;
     private final ActivityLogRepo activityLogRepo;
+    private final CommentRepo commentRepo;
 
-    // REPLACE WITH THIS:
     public TaskController(TaskService taskService, BoardRepo boardRepo, TaskRepo taskRepo,
-            ActivityLogRepo activityLogRepo) {
+            ActivityLogRepo activityLogRepo, CommentRepo commentRepo) {
         this.taskService = taskService;
         this.boardRepo = boardRepo;
         this.taskRepo = taskRepo;
         this.activityLogRepo = activityLogRepo;
+        this.commentRepo = commentRepo;
     }
 
     /**
@@ -115,6 +117,7 @@ public class TaskController {
         if (!boardExists(existingTask.getBoardId())) {
             return ResponseEntity.status(403).body("Board not found or access denied");
         }
+        commentRepo.deleteByTaskId(taskId);
         taskService.deleteTask(taskId, user);
         return ResponseEntity.ok().build();
     }

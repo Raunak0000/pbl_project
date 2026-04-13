@@ -1,6 +1,6 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client/dist/sockjs';
-import { Task, Board } from '../types';
+import { Task, Board, Comment } from '../types';
 
 export type LiveEditingEvent =
   | { type: 'TASK_UPDATE'; payload: { boardId: string; taskId: string; updates: Partial<Task>; userId: string } }
@@ -10,7 +10,9 @@ export type LiveEditingEvent =
   | { type: 'BOARD_UPDATE'; payload: { boardId: string; updates: Partial<Board>; userId: string } }
   | { type: 'BOARD_DELETE'; payload: { boardId: string; userId: string } }
   | { type: 'USER_EDITING'; payload: { boardId: string; taskId: string | null; userId: string; userName: string } }
-  | { type: 'USER_LEFT'; payload: { userId: string } };
+  | { type: 'USER_LEFT'; payload: { userId: string } }
+  | { type: 'COMMENT_ADDED'; payload: { taskId: string; boardId: string; comment: Comment; userId: string } }
+  | { type: 'COMMENT_DELETED'; payload: { taskId: string; boardId: string; commentId: string; userId: string } };
 
 export interface ActiveEditor {
   userId: string;
@@ -151,6 +153,13 @@ class LiveEditingService {
     this.broadcastEvent({
       type: 'BOARD_DELETE',
       payload: { boardId, userId: this.currentUserId },
+    });
+  }
+
+  public broadcastCommentAdded(taskId: string, boardId: string, comment: Comment) {
+    this.broadcastEvent({
+      type: 'COMMENT_ADDED',
+      payload: { taskId, boardId, comment, userId: this.currentUserId },
     });
   }
 
