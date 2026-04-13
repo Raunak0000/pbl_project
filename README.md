@@ -33,17 +33,18 @@
 
 ## 🎯 Overview
 
-SyncSpace is a full-stack collaborative task management application with a React frontend and a Spring Boot backend, persisted to MongoDB. It features real-time cross-tab synchronization, a Kanban board with drag-and-drop, a calendar view, a rich-text editor, team chat, and a command palette — all wrapped in a sleek GitHub-Dark Navy theme.
+SyncSpace is a full-stack collaborative task management application with a React frontend and a Spring Boot backend, persisted to MongoDB. It features real-time collaboration via STOMP WebSockets, a Kanban board with drag-and-drop, a calendar view, a rich-text editor, team chat, and a command palette — all wrapped in a sleek GitHub-Dark Navy theme.
 
 ### Key Highlights
 
 - ☕ **Spring Boot + MongoDB Backend** — RESTful API with JWT authentication and ownership-based authorization
 - 🎨 **GitHub-Dark Navy Theme** — Deep navy backgrounds, green action accents, and zero white
-- 🔄 **Real-time Sync** — Cross-tab live editing via custom event broadcasting (WebSocket-ready)
+- 🔄 **Real-time Sync** — Live collaboration via STOMP over WebSockets (SockJS fallback)
 - 📊 **Multiple Views** — Kanban board, Calendar, and Chat
 - ⌨️ **Command Palette** — `Cmd + K` keyboard shortcut for quick navigation
-- 🔐 **Role-Based Access** — Admin and User roles with secure, ownership-based board access
+- 🔐 **Role-Based Access** — Admin and User roles with collaborative board access
 - ✍️ **Rich Text Editor** — Full-featured WYSIWYG editor powered by Tiptap / ProseMirror
+- 📝 **Activity Logging** — Granular audit trail for all task changes
 
 ---
 
@@ -58,16 +59,19 @@ SyncSpace is a full-stack collaborative task management application with a React
 
 ### 👥 Collaboration
 
-- **Live Editing** — Real-time synchronization across browser tabs using `localStorage` events and `CustomEvent` broadcasting. Architecture is ready for a direct swap to Socket.io / WebSockets.
-- **Presence Indicators** — See which users are actively editing which tasks.
+- **Live Editing** — Real-time synchronization across all connected clients using STOMP over WebSockets (with SockJS fallback). Task creates, updates, deletes, and board changes are broadcast instantly.
+- **Presence Indicators** — See which users are actively editing which tasks, with automatic stale-presence cleanup after 10 seconds.
 - **Chat View** — Team communication integrated alongside task boards.
 - **Board Deletion Sync** — When an admin deletes a project, it vanishes from all active sessions instantly.
+- **Activity Logging** — Every task change (status, title, description, assignee, priority, labels, etc.) is logged with user attribution and timestamps.
 
 ### 🔐 Authentication & Authorization
 
 - **JWT Authentication** — Secure login and registration with BCrypt password hashing and JJWT tokens.
-- **Ownership-Based Access** — Users only see and modify their own boards. All task CRUD operations verify board ownership on the backend before proceeding.
-- **Admin Dashboard** — User management interface for admins (view all users, delete users, inspect roles).
+- **Token Blocklist** — Server-side JWT invalidation on logout, stored in MongoDB.
+- **Rate Limiting** — Login attempts throttled to 5 per IP per 15-minute window.
+- **Collaborative Access** — All authenticated users can see and work on all boards. Board deletion is restricted to the creator or an admin.
+- **Admin Dashboard** — User management interface for admins (view all users, delete users, view board activity logs).
 - **Auto Admin** — The first registered user is automatically assigned the `ADMIN` role.
 
 ### 🎨 User Experience
@@ -88,12 +92,13 @@ SyncSpace is a full-stack collaborative task management application with a React
 | **React** | 19.2 | UI framework |
 | **TypeScript** | 5.8 | Type safety |
 | **Vite** | 6.2 | Build tool & dev server |
-| **Tailwind CSS** | CDN | Utility-first styling (config in `index.html`) |
+| **Tailwind CSS** | 4.2.2 | Utility-first styling (via `@tailwindcss/vite` plugin) |
 | **Framer Motion** | 11.x | Animations & transitions |
 | **Tiptap** | 2.5.7 | Rich text editor (ProseMirror) |
 | **Axios** | 1.13 | HTTP client for API calls |
 | **Lucide React** | 0.563 | Icon library |
-| **Socket.io Client** | 4.8.3 | Real-time communication (ready) |
+| **@stomp/stompjs** | 7.3 | STOMP WebSocket client |
+| **sockjs-client** | 1.6.1 | WebSocket SockJS fallback |
 
 ### Backend
 
@@ -106,6 +111,7 @@ SyncSpace is a full-stack collaborative task management application with a React
 | **JJWT** | 0.12.6 | JWT token generation & validation |
 | **Lombok** | — | Boilerplate reduction |
 | **Spring Validation** | — | DTO request validation |
+| **Spring WebSocket** | — | STOMP messaging & live collaboration |
 
 ---
 
@@ -113,32 +119,37 @@ SyncSpace is a full-stack collaborative task management application with a React
 
 ### Prerequisites
 
-- **Node.js** v16+
+- **Node.js** v18+
 - **Java** 21
 - **Maven** 3.9+
 - **MongoDB** (local instance or Atlas)
+- **Docker & Docker Compose** (optional — for containerized deployment)
 
-### 1. Clone the Repository
+### Option A: Local Development
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/syncspace.git
 cd syncspace
 ```
 
-### 2. Start the Backend
+#### 2. Start the Backend
 
 ```bash
 cd syncspace-backend
 
 # Configure your MongoDB connection in src/main/resources/application.properties
-# Set JWT_SECRET in the root .env file
+# Key properties: spring.data.mongodb.uri, jwt.secret, jwt.expiration, server.port
 
 ./mvnw spring-boot:run
 ```
 
-The backend will start on `http://localhost:8080`.
+The backend will start on the port configured in `application.properties` (default: `10000`).
 
-### 3. Start the Frontend
+> ⚠️ Make sure `.env.local` has `VITE_API_URL` pointing to the correct backend port.
+
+#### 3. Start the Frontend
 
 ```bash
 # From the project root
@@ -148,11 +159,33 @@ npm run dev
 
 The frontend will start on `http://localhost:3000`.
 
-### 4. Build for Production
+#### 4. Build for Production
 
 ```bash
 npm run build      # Output in dist/
 npm run preview    # Preview the production build
+```
+
+### Option B: Docker Compose (All-in-One)
+
+```bash
+# From the project root — starts MongoDB, Backend, and Frontend
+docker compose up --build
+```
+
+| Service | URL |
+|---|---|
+| Frontend | `http://localhost:3000` |
+| Backend API | `http://localhost:8080/api` |
+| MongoDB | `localhost:27017` |
+
+Environment overrides can be set in a `.env` file at the project root:
+
+```env
+MONGO_URI=mongodb://mongo:27017/syncspace
+JWT_SECRET=your-secret-key
+VITE_API_URL=http://localhost:8080/api
+SERVER_PORT=8080
 ```
 
 ---
@@ -160,46 +193,51 @@ npm run preview    # Preview the production build
 ## 📁 Project Structure
 
 ```
-synnnncspace-main/
+syncspace/
 ├── components/                  # React UI Components
 │   ├── auth/
 │   │   ├── LoginPage.tsx        # Login form
 │   │   └── RegisterPage.tsx     # Registration form
 │   ├── admin/
-│   │   └── AdminDashboard.tsx   # Admin user management
+│   │   └── AdminDashboard.tsx   # Admin user management & activity logs
 │   ├── CalendarView.tsx         # Calendar month view
 │   ├── ChatView.tsx             # Team chat interface
 │   ├── CommandPalette.tsx       # Cmd+K quick search
-│   ├── Dashboard.tsx            # Main dashboard + sidebar
+│   ├── Dashboard.tsx            # Main dashboard + board grid
 │   ├── Header.tsx               # App header bar
 │   ├── KanbanBoard.tsx          # Kanban columns + drag-and-drop
 │   ├── LandingPage.tsx          # Marketing landing page
 │   ├── PresenceIndicator.tsx    # Live editing presence dots
 │   ├── TaskCard.tsx             # Individual task card
-│   ├── TaskEditor.tsx           # Inline task editor (Tiptap)
+│   ├── TaskEditor.tsx           # Inline task editor
 │   ├── TaskModal.tsx            # Full task detail modal
 │   ├── ThemeToggle.tsx          # Dark/light mode toggle
-│   └── TiptapEditor.tsx         # Tiptap WYSIWYG wrapper
+│   └── TiptapEditor.tsx         # Tiptap WYSIWYG rich text editor
 ├── contexts/
-│   ├── AuthContext.tsx           # Auth state (user, token, login/logout)
+│   ├── AuthContext.tsx           # Auth state (sessionStorage-backed)
 │   ├── LiveEditingContext.tsx    # Presence & active editors
 │   └── ThemeContext.tsx          # Theme preferences
 ├── services/
-│   ├── api.ts                   # Axios API client (boards, tasks, auth)
-│   ├── liveEditingService.ts    # Real-time event bus (cross-tab sync)
-│   └── mockBackend.ts           # Legacy mock auth (localStorage)
+│   ├── api.ts                   # Axios API client (authApi, api, adminApi)
+│   ├── liveEditingService.ts    # STOMP/WebSocket real-time service
+│   └── mockBackend.ts           # Mock data for offline/testing
 ├── syncspace-backend/           # Spring Boot Backend
+│   ├── Dockerfile.backend       # Backend Docker image
 │   └── src/main/java/com/syncpace/backend/
 │       ├── BackendApplication.java
 │       ├── config/
-│       │   ├── SecurityConfig.java       # CORS, JWT filter, BCrypt
-│       │   ├── JwtService.java           # Token generation & validation
+│       │   ├── SecurityConfig.java       # CORS, CSRF, JWT filter, BCrypt
+│       │   ├── JwtService.java           # Token generation, validation & blocklist
 │       │   ├── JwtAuthFilter.java        # Per-request JWT verification
+│       │   ├── WebSocketsConfig.java     # STOMP broker & SockJS endpoint
+│       │   ├── MongoConfig.java          # MongoDB auditing
 │       │   └── GlobalExceptionHandler.java
 │       ├── controller/
-│       │   ├── AuthController.java       # POST /api/auth/login, /register
-│       │   ├── BoardController.java      # CRUD /api/board
-│       │   └── TaskController.java       # CRUD /api/tasks
+│       │   ├── AuthController.java       # /api/auth (login, register, logout)
+│       │   ├── BoardController.java      # /api/board (CRUD)
+│       │   ├── TaskController.java       # /api/tasks (CRUD + status + logs)
+│       │   ├── AdminController.java      # /api/admin (users, board logs)
+│       │   └── WebSocketsController.java # STOMP message relay
 │       ├── dto/
 │       │   ├── LoginRequest.java
 │       │   └── RegisterRequest.java
@@ -207,20 +245,31 @@ synnnncspace-main/
 │       │   ├── Board.java
 │       │   ├── Task.java
 │       │   ├── TaskStatus.java
-│       │   └── User.java
+│       │   ├── User.java
+│       │   ├── ActivityLog.java          # Audit log entity
+│       │   ├── ActivityAction.java       # 10 tracked action types
+│       │   ├── AppCounter.java           # Atomic first-user-is-admin counter
+│       │   └── InvalidatedToken.java     # JWT blocklist entry
 │       ├── repository/
 │       │   ├── BoardRepo.java
 │       │   ├── TaskRepo.java
-│       │   └── UserRepo.java
+│       │   ├── UserRepo.java
+│       │   ├── ActivityLogRepo.java
+│       │   └── InvalidatedTokenRepo.java
 │       └── service/
-│           └── TaskService.java
-├── App.tsx                      # Root component (routing, state)
-├── index.tsx                    # Entry point
-├── index.html                   # HTML shell + Tailwind config
-├── types.ts                     # Shared TypeScript types
-├── vite.config.ts               # Vite configuration
+│           └── TaskService.java          # Business logic + activity logging
+├── App.tsx                      # Root component (routing, state, CRUD)
+├── index.tsx                    # React DOM entry point
+├── index.html                   # HTML shell
+├── index.css                    # Global styles
+├── types.ts                     # Shared TypeScript interfaces & constants
+├── vite.config.ts               # Vite config (TailwindCSS v4 plugin)
 ├── package.json                 # Frontend dependencies
-└── .env                         # JWT_SECRET
+├── docker-compose.yml           # 3-service stack (MongoDB + Backend + Frontend)
+├── Dockerfile.frontend          # Frontend Docker image (Nginx)
+├── nginx.conf                   # Nginx config for SPA routing
+├── .env.local                   # Local dev API URL
+└── .env.production              # Production API URL
 ```
 
 ---
@@ -229,30 +278,48 @@ synnnncspace-main/
 
 ### Authentication
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/register` | Register a new user (first user → ADMIN) |
-| `POST` | `/api/auth/login` | Login and receive a JWT token |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Public | Register a new user (first user → ADMIN) |
+| `POST` | `/api/auth/login` | Public | Login and receive a JWT token (rate-limited) |
+| `POST` | `/api/auth/logout` | JWT | Invalidate current token (server-side blocklist) |
 
 ### Boards
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/board` | Get all boards for the authenticated user |
-| `POST` | `/api/board` | Create a new board |
-| `DELETE` | `/api/board/:id` | Delete a board (owner only) |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/board` | JWT | Get all boards (collaborative — all users see all) |
+| `POST` | `/api/board` | JWT | Create a new board |
+| `DELETE` | `/api/board/:id` | JWT | Delete a board (creator or admin only) |
 
 ### Tasks
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/tasks/board/:boardId` | Get all tasks for a board |
-| `POST` | `/api/tasks` | Create a new task |
-| `PUT` | `/api/tasks/:id` | Update a task |
-| `PATCH` | `/api/tasks/:id/status?status=` | Update task status |
-| `DELETE` | `/api/tasks/:id` | Delete a task |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/tasks/board/:boardId` | JWT | Get paginated tasks for a board |
+| `POST` | `/api/tasks` | JWT | Create a new task |
+| `PUT` | `/api/tasks/:id` | JWT | Update a task |
+| `PATCH` | `/api/tasks/:id/status?status=` | JWT | Update task status (with dependency validation) |
+| `DELETE` | `/api/tasks/:id` | JWT | Delete a task |
+| `GET` | `/api/tasks/:id/logs` | JWT | Get activity logs for a task |
 
-> All board and task endpoints require a valid JWT in the `Authorization: Bearer <token>` header and verify board ownership server-side.
+### Admin
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/admin/users` | ADMIN | List all registered users |
+| `DELETE` | `/api/admin/users/:id` | ADMIN | Delete a user (cannot self-delete) |
+| `GET` | `/api/admin/boards/:id/logs` | ADMIN | Get activity logs for a board |
+
+### WebSocket
+
+| Protocol | Endpoint | Description |
+|---|---|---|
+| SockJS | `/ws` | WebSocket connection endpoint |
+| STOMP Subscribe | `/topic/live-editing` | Receive real-time events |
+| STOMP Send | `/app/live-editing` | Broadcast events to all clients |
+
+> All REST endpoints (except auth) require a valid JWT in the `Authorization: Bearer <token>` header.
 
 ---
 
@@ -266,23 +333,26 @@ User Action → React Component → Context/State → Axios API Client → Sprin
                                                                     TaskService
                                                                           ↓
                                                                      MongoDB
+                                                                      + ActivityLog
 ```
 
 ### Real-time Sync Flow
 
 ```
-User Action → liveEditingService.broadcast() → localStorage event + CustomEvent
-                                                         ↓
-                                                Other Browser Tabs
-                                                         ↓
-                                              App.tsx event handler → setState()
+User Action → liveEditingService.broadcast() → STOMP Client → Spring Boot WebSocket Controller
+                                                                          ↓
+                                                               /topic/live-editing (broker)
+                                                                          ↓
+                                                              All Connected STOMP Clients
+                                                                          ↓
+                                                              App.tsx event handler → setState()
 ```
 
 ### State Management
 
 | Context | Purpose |
 |---|---|
-| **AuthContext** | User session, JWT token, login/logout, role detection |
+| **AuthContext** | User session, JWT token, login/logout, role detection (sessionStorage) |
 | **ThemeContext** | Dark/light mode preference, persisted to localStorage |
 | **LiveEditingContext** | Active editor tracking, presence indicators |
 
@@ -290,8 +360,11 @@ User Action → liveEditingService.broadcast() → localStorage event + CustomEv
 
 - **BCrypt** password hashing on registration
 - **JWT tokens** (JJWT) issued on login, validated on every request via `JwtAuthFilter`
-- **Ownership checks** — `BoardController` and `TaskController` verify `user.id == board.userId` before any operation
-- **CORS** configured in `SecurityConfig` to allow the frontend origin
+- **Token blocklist** — Invalidated tokens stored in MongoDB, checked on every request
+- **Rate limiting** — 5 login attempts per IP per 15 minutes (in-memory throttle)
+- **Board access** — Collaborative model where all authenticated users can access all boards; deletion restricted to board creator or admin
+- **Admin authorization** — `@PreAuthorize("hasRole('ADMIN')")` on admin endpoints
+- **CORS** configured in `SecurityConfig` for allowed frontend origins
 
 ---
 
@@ -301,23 +374,28 @@ User Action → liveEditingService.broadcast() → localStorage event + CustomEv
 
 - [x] React 19 + TypeScript frontend with Kanban, Calendar, and Chat views
 - [x] Spring Boot 4 + MongoDB backend with JWT auth
-- [x] Ownership-based board and task authorization
+- [x] Collaborative board access model with role-based admin controls
 - [x] GitHub-Dark Navy theme across all components
 - [x] Command palette (`Cmd + K`)
-- [x] Cross-tab live editing sync
+- [x] Real-time collaboration via STOMP WebSockets (SockJS fallback)
+- [x] Presence indicators (see who's editing what)
 - [x] Framer Motion animations
 - [x] Tiptap rich text editor
-- [x] Admin dashboard (user management)
+- [x] Admin dashboard (user management + board activity logs)
+- [x] Activity logging — granular audit trail for all task changes
+- [x] JWT token blocklist (server-side logout)
+- [x] Login rate limiting (5 attempts / 15 min / IP)
+- [x] Docker Compose deployment (MongoDB + Backend + Frontend/Nginx)
+- [x] Task dependency validation (`blockedBy` prevents premature completion)
 
 ### Planned
 
-- [ ] **Real WebSocket Server** — Replace cross-tab simulation with Spring Boot WebSocket / Socket.io for true multi-device real-time sync
 - [ ] **File Attachments** — Upload and attach files to tasks
-- [ ] **Task Comments & Activity Log** — Threaded discussions on tasks
+- [ ] **Task Comments** — Threaded discussions on individual tasks
 - [ ] **Advanced Search & Filtering** — Full-text search across all boards and tasks
 - [ ] **Email Notifications** — Alerts for due dates, assignments, and mentions
-- [ ] **Docker Containerization** — Single-command deployment with Docker Compose
 - [ ] **CI/CD Pipeline** — Automated testing and deployment
+- [ ] **Board Sharing & Permissions** — Granular per-board access control
 
 ---
 
@@ -351,10 +429,12 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 - **Spring Boot** — Robust Java backend framework
 - **React** — Declarative UI library
 - **Tiptap** — Headless rich text editor
-- **Tailwind CSS** — Utility-first CSS framework
+- **Tailwind CSS v4** — Utility-first CSS framework
 - **Framer Motion** — Production-ready animation library
 - **Lucide** — Beautiful open-source icon set
 - **JJWT** — JSON Web Token library for Java
+- **STOMP.js** — WebSocket messaging client
+- **SockJS** — WebSocket fallback transport
 
 ---
 
